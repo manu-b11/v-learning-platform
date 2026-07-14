@@ -1,8 +1,122 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;600;700&display=swap");
-
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500&display=swap");
 @import "tailwindcss";
 
 @theme {
+  /* Colores principales */
+  --color-navy: #14213d;
+  --color-primary: #2f6fed;
+
+  /* Colores de acento (usados por los 4 estilos de aprendizaje VARK) */
+  --color-accent-blue: #2f6fed;
+  --color-accent-teal: #2fbfc4;
+  --color-accent-coral: #eb5757;
+  --color-accent-amber: #f2994a;
+
+  --color-accent-blue-light: #e3ecfd;
+  --color-accent-teal-light: #e3f7f8;
+  --color-accent-coral-light: #fde6e1;
+  --color-accent-amber-light: #fceedd;
+
+  /* Neutros */
+  --color-background: #f5f6fa;
+  --color-surface: #ffffff;
+  --color-border: #e2e5f0;
+  --color-text-secondary: #6b7280;
+
+  /* Tipografía */
   --font-heading: "Manrope", sans-serif;
-  --font-body: "Inter", sans-serif;
+  --font-sans: "Inter", sans-serif;
+
+  /* Sombras */
+  --shadow-card:
+    0 1px 2px 0 rgb(20 33 61 / 0.04), 0 4px 12px 0 rgb(20 33 61 / 0.06);
+  --shadow-card-hover:
+    0 2px 4px 0 rgb(20 33 61 / 0.06), 0 8px 20px 0 rgb(20 33 61 / 0.1);
+}
+
+@layer base {
+  body {
+    @apply font-sans text-[15px] antialiased;
+    background-color: var(--color-background);
+    color: var(--color-navy);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-heading font-bold;
+    color: var(--color-navy);
+  }
+
+  h1 {
+    @apply text-[28px] leading-tight;
+  }
+  h2 {
+    @apply text-[20px] leading-tight;
+  }
+  h3 {
+    @apply text-[16px] leading-tight font-semibold;
+  }
+}
+
+@layer components {
+  /* Botones */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors;
+    background-color: var(--color-primary);
+  }
+  .btn-primary:hover {
+    filter: brightness(0.92);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border bg-white px-4 py-2 text-sm font-medium transition-colors;
+    color: var(--color-navy);
+    border-color: var(--color-navy);
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-background);
+  }
+
+  /* Badges de acento */
+  .badge {
+    @apply inline-flex items-center rounded-md px-3 py-1 text-xs font-semibold;
+  }
+  .badge-blue {
+    background-color: #e3ecfd;
+    color: #1e4fbe;
+  }
+  .badge-teal {
+    background-color: #e3f7f8;
+    color: #136b70;
+  }
+  .badge-coral {
+    background-color: #fde6e1;
+    color: #9c3b2e;
+  }
+  .badge-amber {
+    background-color: #fceedd;
+    color: #8a5417;
+  }
+
+  /* Tarjeta de curso */
+  @layer components {
+    .card {
+      @apply rounded-xl bg-white p-5 shadow-card transition-shadow;
+      border: 1px solid white;
+    }
+    .card:hover {
+      @apply shadow-card-hover;
+    }
+  }
+
+  /* Barra de progreso */
+  .progress-track {
+    @apply h-2 w-full overflow-hidden rounded-full;
+    background-color: var(--color-border);
+  }
+  .progress-fill {
+    @apply h-full rounded-full;
+    background-color: var(--color-primary);
+  }
 }

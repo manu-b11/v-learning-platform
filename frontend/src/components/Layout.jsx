@@ -6,10 +6,10 @@ function Layout({ children }) {
     <div className="flex">
       <Sidebar />
 
-      <div className="flex-1">
+      <div className="ml-64 flex-1 bg-background">
         <Navbar />
 
-        <main className="p-6">{children}</main>
+        <main className="pt-3 pb-6 px-6">{children}</main>
       </div>
     </div>
   );

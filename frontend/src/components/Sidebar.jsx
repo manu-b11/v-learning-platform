@@ -39,15 +39,15 @@ const menuItems = [
 
 function Sidebar() {
   return (
-    <aside className="w-64 h-screen bg-[#14213D] text-white flex flex-col justify-between shadow-lg">
+    <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col justify-between bg-navy text-white shadow-lg">
       <div>
         {/* Logo */}
-        <div className="px-8 py-8 border-b border-white/10">
-          <img src={logo} alt="V-Learning" className="h-15" />
+        <div className="border-b border-white/10 px-4 py-2">
+          <img src={logo} alt="V-Learning" className="h-14" />
         </div>
 
         {/* Menú */}
-        <nav className="flex flex-col mt-6 px-4 gap-2 font-body">
+        <nav className="mt-14 flex flex-col gap-2 px-4">
           {menuItems.map((item) => {
             const Icon = item.icon;
 
@@ -56,10 +56,10 @@ function Sidebar() {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  `flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${
                     isActive
-                      ? "bg-white text-[#14213D] font-medium"
-                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                      ? "bg-surface text-navy font-medium shadow-sm"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
                   }`
                 }
               >
@@ -72,8 +72,8 @@ function Sidebar() {
       </div>
 
       {/* Cerrar sesión */}
-      <div className="p-4 border-t border-white/10">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-body text-gray-300 hover:bg-red-500 hover:text-white transition-all duration-200">
+      <div className="border-t border-white/10 p-4">
+        <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-white/70 transition-all duration-200 hover:bg-accent-coral hover:text-white">
           <LogOut size={20} />
           <span>Cerrar sesión</span>
         </button>

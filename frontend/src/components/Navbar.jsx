@@ -1,29 +1,34 @@
-import { Bell, Search, UserCircle } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 
 function Navbar() {
   return (
-    <header className="h-20 bg-white flex items-center justify-between px-8">
-      <div className="relative w-96">
-        {/* Buscador */}
-        <Search
-          size={20}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-        />
-        <input
-          type="text"
-          placeholder="Buscar cursos..."
-          className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#14213D]"
-        />
+    <header className="flex h-20 items-center justify-between gap-8 px-8">
+      {/* Buscador */}
+      <div className="flex-1 max-w-3xl">
+        <div className="relative w-full">
+          <Search
+            size={20}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
+          />
+
+          <input
+            type="text"
+            placeholder="Buscar cursos..."
+            className="w-full rounded-lg border border-border bg-surface py-3 pl-10 pr-4 shadow-card focus:outline-none focus:ring-2 focus:ring-navy"
+          />
+        </div>
       </div>
+
       {/* Acciones */}
       <div className="flex items-center gap-6">
-        <Bell className="cursor-pointer text-gray-600" />
+        <Bell className="cursor-pointer text-text-secondary hover:text-navy" />
 
-        <div className="flex items-center gap-3 cursor-pointer">
-          <div className="w-9 h-9 rounded-full bg-[#14213D] text-white flex items-center justify-center font-medium">
+        <div className="flex cursor-pointer items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-navy font-medium text-white">
             S
           </div>
-          <span className="font-body font-medium">Sara</span>
+
+          <span className="font-medium">Sara</span>
         </div>
       </div>
     </header>
