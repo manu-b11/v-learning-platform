@@ -15,6 +15,11 @@
   --color-accent-blue-light: #e3ecfd;
   --color-accent-teal-light: #e3f7f8;
   --color-accent-coral-light: #fde6e1;
+
+  /* Semántico (no forma parte de la taxonomía VARK) */
+  --color-danger: #c0392b;
+  --color-success: #2e9e5b;
+  --color-success-light: #e6f4ec;
   --color-accent-amber-light: #fceedd;
 
   /* Neutros */
@@ -78,45 +83,77 @@
     background-color: var(--color-background);
   }
 
-  /* Badges de acento */
+  /* Badges de acento VARK */
   .badge {
-    @apply inline-flex items-center rounded-md px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wide;
   }
   .badge-blue {
-    background-color: #e3ecfd;
+    background-color: var(--color-accent-blue-light);
     color: #1e4fbe;
   }
   .badge-teal {
-    background-color: #e3f7f8;
+    background-color: var(--color-accent-teal-light);
     color: #136b70;
   }
   .badge-coral {
-    background-color: #fde6e1;
+    background-color: var(--color-accent-coral-light);
     color: #9c3b2e;
   }
   .badge-amber {
-    background-color: #fceedd;
+    background-color: var(--color-accent-amber-light);
     color: #8a5417;
+  }
+  .badge-success {
+    background-color: var(--color-success-light);
+    color: var(--color-success);
+  }
+  .badge-neutral {
+    background-color: var(--color-background);
+    color: var(--color-text-secondary);
   }
 
   /* Tarjeta de curso */
-  @layer components {
-    .card {
-      @apply rounded-xl bg-white p-5 shadow-card transition-shadow;
-      border: 1px solid white;
-    }
-    .card:hover {
-      @apply shadow-card-hover;
-    }
+  .card {
+    @apply rounded-xl bg-white p-5 shadow-card transition-all duration-300 ease-out;
+    border: 1px solid var(--color-border);
+  }
+  .card:hover {
+    @apply shadow-card-hover;
+    border-color: color-mix(
+      in srgb,
+      var(--color-navy) 18%,
+      var(--color-border)
+    );
+  }
+
+  /* Tarjeta con imagen a sangre (sin padding): la imagen queda a ras del borde,
+     recortada por el mismo radio del contenedor, sin doble marco */
+  .card-media {
+    @apply overflow-hidden rounded-xl bg-white shadow-card transition-all duration-300 ease-out;
+    border: 1px solid var(--color-border);
+  }
+  .card-media:hover {
+    @apply shadow-card-hover;
+    border-color: color-mix(
+      in srgb,
+      var(--color-navy) 18%,
+      var(--color-border)
+    );
+  }
+
+  /* Contenedor estático (listas, tablas): mismo look que .card, sin hover propio */
+  .panel {
+    @apply rounded-xl bg-white shadow-card;
+    border: 1px solid var(--color-border);
   }
 
   /* Barra de progreso */
   .progress-track {
-    @apply h-2 w-full overflow-hidden rounded-full;
+    @apply h-1.5 w-full overflow-hidden rounded-full;
     background-color: var(--color-border);
   }
   .progress-fill {
-    @apply h-full rounded-full;
+    @apply h-full rounded-full transition-all duration-700;
     background-color: var(--color-primary);
   }
 }

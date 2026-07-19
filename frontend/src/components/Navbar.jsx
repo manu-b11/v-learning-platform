@@ -2,7 +2,7 @@ import { Bell, Search } from "lucide-react";
 
 function Navbar() {
   return (
-    <header className="flex h-20 items-center justify-between gap-8 px-8">
+    <header className="flex h-20 items-center justify-between gap-8 border-b border-border px-8">
       {/* Buscador */}
       <div className="flex-1 max-w-3xl">
         <div className="relative w-full">
@@ -14,14 +14,17 @@ function Navbar() {
           <input
             type="text"
             placeholder="Buscar cursos..."
-            className="w-full rounded-lg border border-border bg-surface py-3 pl-10 pr-4 shadow-card focus:outline-none focus:ring-2 focus:ring-navy"
+            className="w-full rounded-lg border border-border bg-surface py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
       </div>
 
       {/* Acciones */}
       <div className="flex items-center gap-6">
-        <Bell className="cursor-pointer text-text-secondary hover:text-navy" />
+        <Bell
+          size={20}
+          className="cursor-pointer text-text-secondary hover:text-navy"
+        />
 
         <div className="flex cursor-pointer items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-navy font-medium text-white">

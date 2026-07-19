@@ -36,18 +36,19 @@ const courses = [
 function Dashboard() {
   return (
     <Layout>
-      {/* Banner */}
-      <div className="flex flex-col justify-center rounded-xl bg-primary p-8  h-44 shadow-md">
-        <h1 className="text-white">¡Bienvenida, Sara!</h1>
-
-        <p className="mt-2 text-white/90">
+      {/* Banner: fondo sólido navy, sin degradado ni sombra pesada */}
+      <div className="flex h-44 flex-col justify-center rounded-xl border border-white/10 bg-navy p-8 shadow-sm">
+        <h1 className="font-heading text-[26px] font-semibold tracking-tight text-white">
+          ¡Bienvenida, Sara!
+        </h1>
+        <p className="mt-2 max-w-md text-[14px] text-white/70">
           Continúa desarrollando tus competencias y realiza seguimiento a tu
           progreso de aprendizaje.
         </p>
       </div>
 
-      {/* Tarjetas */}
-      <div className="mt-8 grid grid-cols-4 gap-6">
+      {/* Stat cards */}
+      <div className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-4">
         <StatCard
           title="Mis cursos"
           value={12}
@@ -60,35 +61,35 @@ function Dashboard() {
           title="Completados"
           value={5}
           icon={Award}
-          iconBg="bg-accent-teal-light"
-          iconColor="text-accent-teal"
+          iconBg="bg-accent-blue-light"
+          iconColor="text-accent-blue"
         />
 
         <StatCard
           title="En progreso"
           value={3}
           icon={Clock3}
-          iconBg="bg-accent-coral-light"
-          iconColor="text-accent-coral"
+          iconBg="bg-accent-blue-light"
+          iconColor="text-accent-blue"
         />
 
         <StatCard
           title="Certificados"
           value={2}
           icon={FileCheck}
-          iconBg="bg-accent-amber-light"
-          iconColor="text-accent-amber"
+          iconBg="bg-accent-blue-light"
+          iconColor="text-accent-blue"
         />
       </div>
 
+      {/* Cursos */}
       <section className="mt-10">
         <div className="mb-6 flex items-center justify-between">
-          <h2>Mis cursos</h2>
-
+          <h2 className="tracking-tight">Mis cursos</h2>
           <button className="btn-secondary">Ver todos</button>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => (
             <CourseCard key={course.id} course={course} />
           ))}

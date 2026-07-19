@@ -39,7 +39,7 @@ const menuItems = [
 
 function Sidebar() {
   return (
-    <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col justify-between bg-navy text-white shadow-lg">
+    <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col justify-between border-r border-white/10 bg-navy text-white">
       <div>
         {/* Logo */}
         <div className="border-b border-white/10 px-4 py-2">
@@ -73,7 +73,7 @@ function Sidebar() {
 
       {/* Cerrar sesión */}
       <div className="border-t border-white/10 p-4">
-        <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-white/70 transition-all duration-200 hover:bg-accent-coral hover:text-white">
+        <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-white/70 transition-all duration-200 hover:bg-[var(--color-danger)] hover:text-white">
           <LogOut size={20} />
           <span>Cerrar sesión</span>
         </button>
