@@ -42,8 +42,9 @@ function Sidebar() {
     <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col justify-between border-r border-white/10 bg-navy text-white">
       <div>
         {/* Logo */}
-        <div className="border-b border-white/10 px-4 py-2">
-          <img src={logo} alt="V-Learning" className="h-14" />
+        <div className="border-b border-white/10 px-4 py-4">
+          {/* <img src={logo} alt="V-Learning" className="h-14" /> */}
+          <h1 className="text-white">V Learning</h1>
         </div>
 
         {/* Menú */}

@@ -10,6 +10,7 @@ import Evaluations from "../pages/Evaluations";
 import TakeEvaluation from "../pages/TakeEvaluation";
 import EvaluationResult from "../pages/EvaluationResult";
 import Profile from "../pages/Profile";
+import Settings from "../pages/Settings";
 
 function AppRouter() {
   return (
@@ -28,8 +29,8 @@ function AppRouter() {
         <Route path="/evaluations" element={<Evaluations />} />
         <Route path="/evaluations/:id" element={<TakeEvaluation />} />
         <Route path="/evaluations/:id/result" element={<EvaluationResult />} />
-
         <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   );

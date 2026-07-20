@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { ChevronLeft, CircleCheck, Circle, Info } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { CircleCheck, Circle, Info } from "lucide-react";
 
 import Layout from "../components/Layout";
+import Breadcrumbs from "../components/Breadcrumbs";
 import ContentPlayer from "../components/ContentPlayer";
 import ContentTypeIcon from "../utils/ContentTypeIcon";
 import { getCourseById, getModuleById } from "../data/courses";
+import { formatDuration } from "../utils/format";
 
 function ModuleContent() {
   const { id, moduleId } = useParams();
@@ -36,6 +38,12 @@ function ModuleContent() {
   const selectedContent =
     module.contents.find((c) => c.id === selectedId) ?? defaultContent;
 
+  const currentIndex = module.contents.findIndex(
+    (c) => c.id === selectedContent.id,
+  );
+  const nextContent = module.contents[currentIndex + 1];
+  const isRecommended = selectedContent.style === course.learningStyle;
+
   function handleSelect(content) {
     setSelectedId(content.id);
     setIsFallback(false);
@@ -43,13 +51,14 @@ function ModuleContent() {
 
   return (
     <Layout>
-      <Link
-        to={`/courses/${course.id}`}
-        className="inline-flex items-center gap-1 text-sm text-text-secondary transition-colors duration-200 hover:text-navy"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        {course.title}
-      </Link>
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", to: "/dashboard" },
+          { label: "Mis cursos", to: "/courses" },
+          { label: course.title, to: `/courses/${course.id}` },
+          { label: module.title },
+        ]}
+      />
 
       <h1 className="mt-2 tracking-tight">{module.title}</h1>
 
@@ -67,7 +76,11 @@ function ModuleContent() {
       )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-        <ContentPlayer content={selectedContent} />
+        <ContentPlayer
+          content={selectedContent}
+          isRecommended={isRecommended}
+          onNext={nextContent ? () => handleSelect(nextContent) : null}
+        />
 
         <div className="panel h-fit divide-y divide-border">
           {module.contents.map((content) => (
@@ -90,7 +103,7 @@ function ModuleContent() {
                   {content.title}
                 </p>
                 <p className="mt-0.5 text-xs text-text-secondary">
-                  {content.duration}
+                  {formatDuration(content.durationMinutes)}
                 </p>
               </div>
 

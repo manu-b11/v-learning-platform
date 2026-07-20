@@ -3,7 +3,7 @@ export const evaluations = [
     id: 1,
     title: "Evaluación Módulo 1 — Componentes",
     course: "React desde Cero",
-    dueDate: "20 Jul 2026",
+    dueDate: "2026-07-20",
     status: "Pendiente",
     score: null,
     questions: [
@@ -36,7 +36,7 @@ export const evaluations = [
     id: 2,
     title: "Quiz de Fundamentos de UX",
     course: "Diseño UX",
-    dueDate: "10 Jul 2026",
+    dueDate: "2026-07-10",
     status: "Completada",
     score: 92,
     questions: [],
@@ -45,14 +45,19 @@ export const evaluations = [
     id: 3,
     title: "Examen Final",
     course: "Scrum Fundamentals",
-    dueDate: "15 Jul 2026",
+    dueDate: "2026-07-15",
     status: "En progreso",
     score: null,
     questions: [
       {
         id: 1,
         text: "¿Cuánto dura habitualmente un Sprint?",
-        options: ["1 día", "1 a 4 semanas", "6 meses", "No tiene duración fija"],
+        options: [
+          "1 día",
+          "1 a 4 semanas",
+          "6 meses",
+          "No tiene duración fija",
+        ],
         correctIndex: 1,
       },
       {
@@ -72,7 +77,7 @@ export const evaluations = [
     id: 4,
     title: "Evaluación Diagnóstica",
     course: "Java Básico",
-    dueDate: "5 Jul 2026",
+    dueDate: "2026-07-05",
     status: "Completada",
     score: 78,
     questions: [],

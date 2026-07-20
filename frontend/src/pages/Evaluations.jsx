@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import Layout from "../components/Layout";
 import { evaluations } from "../data/evaluations";
+import { formatDate } from "../utils/format";
 
 const filters = ["Todas", "Pendientes", "En progreso", "Completadas"];
 
@@ -71,7 +72,7 @@ function Evaluations() {
               <div>
                 <h3 className="text-[15px]">{ev.title}</h3>
                 <p className="mt-1 text-sm text-text-secondary">
-                  {ev.course} · Vence {ev.dueDate}
+                  {ev.course} · Vence {formatDate(ev.dueDate)}
                 </p>
               </div>
 
