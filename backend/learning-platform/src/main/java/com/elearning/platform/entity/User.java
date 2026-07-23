@@ -3,6 +3,7 @@ package com.elearning.platform.entity;
 import com.elearning.platform.enums.LearningStyle;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -28,17 +29,18 @@ public class User {
     @Column(nullable = false, length = 100)
     private String lastName;
 
+    @Email
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private LearningStyle learningStyle;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
@@ -77,4 +79,5 @@ public class User {
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
 }
