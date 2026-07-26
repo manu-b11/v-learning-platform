@@ -2,9 +2,8 @@ import { Bell, Search } from "lucide-react";
 
 function Navbar() {
   return (
-    <header className="flex h-20 items-center justify-between gap-8 border-b border-border px-8">
-      {/* Buscador */}
-      <div className="flex-1 max-w-3xl">
+    <header className="flex h-20 items-center gap-8 border-b border-border px-6">
+      <div className="min-w-0 flex-1">
         <div className="relative w-full">
           <Search
             size={20}
@@ -19,8 +18,8 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Acciones */}
-      <div className="flex items-center gap-6">
+      {/* Acciones: mismo ancho que el panel lateral derecho (w-80), alineadas con él */}
+      <div className="flex w-96 shrink-0 items-center justify-end gap-6">
         <Bell
           size={20}
           className="cursor-pointer text-text-secondary hover:text-navy"

@@ -15,12 +15,48 @@ const statusBadgeClass = {
   Completado: "badge-success",
 };
 
-function CourseCard({ course }) {
+function CourseCard({ course, compact = false }) {
   const { id, title, instructor, image, progress, learningStyle, status } =
     course;
 
-  const totalMinutes = getTotalMinutes(course);
   const remainingMinutes = getRemainingMinutes(course);
+
+  // Versión compacta: para filas dentro de otras secciones (ej. "Continuar
+  // viendo" en el Dashboard), donde la card completa se ve sobredimensionada.
+  if (compact) {
+    return (
+      <Link to={`/courses/${id}`} className="card-media block">
+        <img src={image} alt={title} className="h-24 w-full object-cover" />
+
+        <div className="p-4">
+          <span className={`badge ${varkBadgeClass[learningStyle]}`}>
+            {learningStyle}
+          </span>
+
+          <h3 className="mt-2 truncate text-sm">{title}</h3>
+
+          <div className="mt-3">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-xs text-text-secondary">
+                {status === "Completado"
+                  ? "Completado"
+                  : `${formatDuration(remainingMinutes)} restantes`}
+              </span>
+              <span className="text-xs font-medium text-navy">{progress}%</span>
+            </div>
+            <div className="progress-track">
+              <div
+                className="progress-fill"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
+  const totalMinutes = getTotalMinutes(course);
   const moduleCount = getModuleCount(course);
 
   return (
