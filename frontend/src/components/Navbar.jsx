@@ -1,6 +1,27 @@
+import { useEffect, useState } from "react";
 import { Bell, Search } from "lucide-react";
 
+import axiosClient from "../api/axiosClient";
+
 function Navbar() {
+  const [user, setUser] = useState({
+    firstName: "",
+    lastName: "",
+  });
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const response = await axiosClient.get("/users/me");
+        setUser(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadUser();
+  }, []);
+
   return (
     <header className="flex h-20 items-center gap-8 border-b border-border px-6">
       <div className="min-w-0 flex-1">
@@ -18,7 +39,6 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Acciones: mismo ancho que el panel lateral derecho (w-80), alineadas con él */}
       <div className="flex w-96 shrink-0 items-center justify-end gap-6">
         <Bell
           size={20}
@@ -27,10 +47,10 @@ function Navbar() {
 
         <div className="flex cursor-pointer items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-navy font-medium text-white">
-            S
+            {user.firstName ? user.firstName.charAt(0).toUpperCase() : "E"}
           </div>
 
-          <span className="font-medium">Sara</span>
+          <span className="font-medium">{user.firstName || "Estudiante"}</span>
         </div>
       </div>
     </header>
