@@ -4,6 +4,7 @@ import com.elearning.platform.dto.request.SaveVarkResultRequest;
 import com.elearning.platform.dto.response.VarkResultResponse;
 import com.elearning.platform.entity.User;
 import com.elearning.platform.entity.VarkResult;
+import com.elearning.platform.enums.LearningStyle;
 import com.elearning.platform.repository.UserRepository;
 import com.elearning.platform.repository.VarkResultRepository;
 import lombok.RequiredArgsConstructor;
@@ -80,7 +81,7 @@ public class VarkResultService {
     }
 
     // Calcular estilo dominante
-    private String calculateDominantStyle(
+    private LearningStyle calculateDominantStyle(
             SaveVarkResultRequest request
     ) {
 
@@ -95,18 +96,18 @@ public class VarkResultService {
         );
 
         if (max == visual) {
-            return "Visual";
+            return LearningStyle.VISUAL;
         }
 
         if (max == auditory) {
-            return "Auditivo";
+            return LearningStyle.AUDITORY;
         }
 
         if (max == reading) {
-            return "Lectura/Escritura";
+            return LearningStyle.READING_WRITING;
         }
 
-        return "Kinestésico";
+        return LearningStyle.KINESTHETIC;
     }
 
     // Construir respuesta

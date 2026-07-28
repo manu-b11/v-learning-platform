@@ -1,7 +1,7 @@
 package com.elearning.platform.dto.response;
 
-import com.elearning.platform.enums.ContentType;
 import com.elearning.platform.enums.LearningStyle;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,16 +13,18 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ContentResponse {
+public class CourseCardResponse {
 
-    private Long id;
+  private Long id;
 
-    private String title;
+  private String title;
 
-    private String url;
+  private String imageUrl;
 
-    private ContentType type;
+  private LearningStyle learningStyle;
 
-    private LearningStyle learningStyle;
+  private Integer progress;
+
+  private Integer remainingMinutes;
 
 }

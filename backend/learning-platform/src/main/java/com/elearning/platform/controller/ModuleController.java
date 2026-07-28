@@ -2,6 +2,7 @@ package com.elearning.platform.controller;
 
 import com.elearning.platform.dto.request.CreateModuleRequest;
 import com.elearning.platform.dto.request.UpdateModuleRequest;
+import com.elearning.platform.dto.response.ModuleDetailResponse;
 import com.elearning.platform.dto.response.ModuleResponse;
 import com.elearning.platform.services.ModuleService;
 import jakarta.validation.Valid;
@@ -20,12 +21,13 @@ public class ModuleController {
 
     // Crear módulo
     @PostMapping("/api/courses/{courseId}/modules")
-    public ResponseEntity<ModuleResponse> createModule(
+    public ResponseEntity<ModuleDetailResponse> createModule(
             @PathVariable Long courseId,
             @Valid @RequestBody CreateModuleRequest request
     ) {
 
-        ModuleResponse module = moduleService.createModule(courseId, request);
+        ModuleDetailResponse module =
+                moduleService.createModule(courseId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(module);
     }
@@ -44,23 +46,24 @@ public class ModuleController {
 
     // Obtener módulo por id
     @GetMapping("/api/modules/{id}")
-    public ResponseEntity<ModuleResponse> getModuleById(
+    public ResponseEntity<ModuleDetailResponse> getModuleById(
             @PathVariable Long id
     ) {
 
-        ModuleResponse module = moduleService.getModuleById(id);
+        ModuleDetailResponse module =
+                moduleService.getModuleById(id);
 
         return ResponseEntity.ok(module);
     }
 
     // Actualizar módulo
     @PutMapping("/api/modules/{id}")
-    public ResponseEntity<ModuleResponse> updateModule(
+    public ResponseEntity<ModuleDetailResponse> updateModule(
             @PathVariable Long id,
             @Valid @RequestBody UpdateModuleRequest request
     ) {
 
-        ModuleResponse module =
+        ModuleDetailResponse module =
                 moduleService.updateModule(id, request);
 
         return ResponseEntity.ok(module);

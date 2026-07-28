@@ -6,12 +6,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CourseResponse {
+public class ModuleDetailResponse {
 
     private Long id;
 
@@ -19,6 +21,8 @@ public class CourseResponse {
 
     private String description;
 
-    private Boolean active;
+    private Integer orderNumber;
+
+    private List<ContentResponse> contents;
 
 }

@@ -1,5 +1,6 @@
 package com.elearning.platform.entity;
 
+import com.elearning.platform.enums.LearningStyle;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -27,9 +28,16 @@ public class Course {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(length = 500)
+    private String imageUrl;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LearningStyle learningStyle;
 
     @JsonIgnore
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)

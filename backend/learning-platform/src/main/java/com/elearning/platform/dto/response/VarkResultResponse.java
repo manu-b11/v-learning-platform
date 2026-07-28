@@ -1,5 +1,6 @@
 package com.elearning.platform.dto.response;
 
+import com.elearning.platform.enums.LearningStyle;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +24,6 @@ public class VarkResultResponse {
 
     private Integer kinestheticScore;
 
-    private String dominantStyle;
+    private LearningStyle dominantStyle;
 
 }

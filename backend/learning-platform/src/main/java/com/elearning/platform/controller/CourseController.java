@@ -2,7 +2,8 @@ package com.elearning.platform.controller;
 
 import com.elearning.platform.dto.request.CreateCourseRequest;
 import com.elearning.platform.dto.request.UpdateCourseRequest;
-import com.elearning.platform.dto.response.CourseResponse;
+import com.elearning.platform.dto.response.CourseCardResponse;
+import com.elearning.platform.dto.response.CourseDetailResponse;
 import com.elearning.platform.services.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,43 +22,44 @@ public class CourseController {
 
     // Crear curso
     @PostMapping
-    public ResponseEntity<CourseResponse> createCourse(
+    public ResponseEntity<CourseDetailResponse> createCourse(
             @Valid @RequestBody CreateCourseRequest request
     ) {
 
-        CourseResponse course = courseService.createCourse(request);
+        CourseDetailResponse course = courseService.createCourse(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(course);
     }
 
     // Obtener todos los cursos
     @GetMapping
-    public ResponseEntity<List<CourseResponse>> getAllCourses() {
+    public ResponseEntity<List<CourseCardResponse>> getAllCourses() {
 
-        List<CourseResponse> courses = courseService.getAllCourses();
+        List<CourseCardResponse> courses = courseService.getAllCourses();
 
         return ResponseEntity.ok(courses);
     }
 
     // Obtener curso por id
     @GetMapping("/{id}")
-    public ResponseEntity<CourseResponse> getCourseById(
+    public ResponseEntity<CourseDetailResponse> getCourseById(
             @PathVariable Long id
     ) {
 
-        CourseResponse course = courseService.getCourseById(id);
+        CourseDetailResponse course = courseService.getCourseById(id);
 
         return ResponseEntity.ok(course);
     }
 
     // Actualizar curso
     @PutMapping("/{id}")
-    public ResponseEntity<CourseResponse> updateCourse(
+    public ResponseEntity<CourseDetailResponse> updateCourse(
             @PathVariable Long id,
             @Valid @RequestBody UpdateCourseRequest request
     ) {
 
-        CourseResponse course = courseService.updateCourse(id, request);
+        CourseDetailResponse course =
+                courseService.updateCourse(id, request);
 
         return ResponseEntity.ok(course);
     }

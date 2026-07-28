@@ -17,10 +17,6 @@ public class ModuleResponse {
 
     private String title;
 
-    private String description;
-
     private Integer orderNumber;
-
-    private Long courseId;
 
 }

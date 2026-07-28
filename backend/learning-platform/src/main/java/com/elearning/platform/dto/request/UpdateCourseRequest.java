@@ -1,5 +1,7 @@
 package com.elearning.platform.dto.request;
 
+import com.elearning.platform.enums.LearningStyle;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -16,6 +18,10 @@ public class UpdateCourseRequest {
     @Size(max = 5000, message = "La descripción es demasiado larga")
     private String description;
 
+    private String imageUrl;
+
     private Boolean active;
+
+    private LearningStyle learningStyle;
 
 }

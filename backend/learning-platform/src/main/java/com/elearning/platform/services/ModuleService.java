@@ -2,7 +2,9 @@ package com.elearning.platform.services;
 
 import com.elearning.platform.dto.request.CreateModuleRequest;
 import com.elearning.platform.dto.request.UpdateModuleRequest;
+import com.elearning.platform.dto.response.ModuleDetailResponse;
 import com.elearning.platform.dto.response.ModuleResponse;
+import com.elearning.platform.dto.response.ContentResponse;
 import com.elearning.platform.entity.Course;
 import com.elearning.platform.entity.Module;
 import com.elearning.platform.repository.CourseRepository;
@@ -20,7 +22,7 @@ public class ModuleService {
     private final CourseRepository courseRepository;
 
     // Crear módulo
-    public ModuleResponse createModule(
+    public ModuleDetailResponse createModule(
             Long courseId,
             CreateModuleRequest request
     ) {
@@ -39,8 +41,7 @@ public class ModuleService {
 
         moduleRepository.save(module);
 
-        // Construir respuesta
-        return buildResponse(module);
+        return buildDetailResponse(module);
     }
 
     // Obtener módulos de un curso
@@ -53,19 +54,18 @@ public class ModuleService {
     }
 
     // Obtener módulo por id
-    public ModuleResponse getModuleById(Long id) {
+    public ModuleDetailResponse getModuleById(Long id) {
 
         Module module = moduleRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Módulo no encontrado")
                 );
 
-        // Construir respuesta
-        return buildResponse(module);
+        return buildDetailResponse(module);
     }
 
     // Actualizar módulo
-    public ModuleResponse updateModule(
+    public ModuleDetailResponse updateModule(
             Long id,
             UpdateModuleRequest request
     ) {
@@ -81,8 +81,7 @@ public class ModuleService {
 
         moduleRepository.save(module);
 
-        // Construir respuesta
-        return buildResponse(module);
+        return buildDetailResponse(module);
     }
 
     // Eliminar módulo
@@ -96,15 +95,33 @@ public class ModuleService {
         moduleRepository.delete(module);
     }
 
-    // Construir respuesta
+    // Construir respuesta para listado
     private ModuleResponse buildResponse(Module module) {
 
         return ModuleResponse.builder()
                 .id(module.getId())
                 .title(module.getTitle())
+                .orderNumber(module.getOrderNumber())
+                .build();
+    }
+
+    // Construir respuesta para detalle
+    private ModuleDetailResponse buildDetailResponse(Module module) {
+
+        return ModuleDetailResponse.builder()
+                .id(module.getId())
+                .title(module.getTitle())
                 .description(module.getDescription())
                 .orderNumber(module.getOrderNumber())
-                .courseId(module.getCourse().getId())
+                .contents(
+                        module.getContents()
+                                .stream()
+                                .map(content -> ContentResponse.builder()
+                                        .id(content.getId())
+                                        .title(content.getTitle())
+                                        .build())
+                                .toList()
+                )
                 .build();
     }
 

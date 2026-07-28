@@ -1,6 +1,9 @@
 package com.elearning.platform.dto.request;
 
+import com.elearning.platform.enums.LearningStyle;
+
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,6 +19,11 @@ public class CreateCourseRequest {
     @Size(max = 5000, message = "La descripción es demasiado larga")
     private String description;
 
+    private String imageUrl;
+
     private Boolean active;
+
+    @NotNull(message = "El estilo de aprendizaje es obligatorio")
+    private LearningStyle learningStyle;
 
 }
