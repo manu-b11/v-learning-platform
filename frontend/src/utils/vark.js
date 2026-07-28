@@ -5,6 +5,13 @@ export const varkBadgeClass = {
   Kinestésico: "bg-accent-amber-light text-accent-amber",
 };
 
+export const varkEnumToLabel = {
+  VISUAL: "Visual",
+  AUDITORY: "Auditivo",
+  READ_WRITE: "Lectura/Escritura",
+  KINAESTHETIC: "Kinestésico",
+};
+
 export const varkSolidClass = {
   Visual: "bg-accent-blue",
   Auditivo: "bg-accent-teal",

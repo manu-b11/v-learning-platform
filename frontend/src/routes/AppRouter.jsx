@@ -11,6 +11,8 @@ import TakeEvaluation from "../pages/TakeEvaluation";
 import EvaluationResult from "../pages/EvaluationResult";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
+import VarkTest from "../pages/VarkTest";
+import VarkResult from "../pages/VarkResult";
 
 function AppRouter() {
   return (
@@ -22,15 +24,14 @@ function AppRouter() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:id" element={<CourseDetail />} />
-        <Route
-          path="/courses/:id/modules/:moduleId"
-          element={<ModuleContent />}
-        />
+        <Route path="/courses/:id/modules/:moduleId" element={<ModuleContent />} />
         <Route path="/evaluations" element={<Evaluations />} />
         <Route path="/evaluations/:id" element={<TakeEvaluation />} />
         <Route path="/evaluations/:id/result" element={<EvaluationResult />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/vark-test" element={<VarkTest />} />
+        <Route path="/vark-test/result" element={<VarkResult />} />
       </Routes>
     </BrowserRouter>
   );
