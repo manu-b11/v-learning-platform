@@ -1,56 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 
 import Layout from "../components/Layout";
 import CourseCard from "../components/CourseCard";
-import { courses } from "../data/courses";
-
-const filters = ["Todos", "En progreso", "Completados", "Pendientes"];
-
-const filterToStatus = {
-  "En progreso": "En progreso",
-  Completados: "Completado",
-  Pendientes: "Pendiente",
-};
-
-const sortOptions = [
-  { value: "default", label: "Recomendado" },
-  { value: "dueDate", label: "Vence pronto" },
-  { value: "progressDesc", label: "Mayor progreso" },
-  { value: "progressAsc", label: "Menor progreso" },
-];
-
-function sortCourses(list, sortBy) {
-  const sorted = [...list];
-
-  switch (sortBy) {
-    case "dueDate":
-      return sorted.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-    case "progressDesc":
-      return sorted.sort((a, b) => b.progress - a.progress);
-    case "progressAsc":
-      return sorted.sort((a, b) => a.progress - b.progress);
-    default:
-      return sorted;
-  }
-}
+import { getAllCourses } from "../api/courseService";
 
 function Courses() {
-  const [activeFilter, setActiveFilter] = useState("Todos");
+  const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("default");
+  const [loading, setLoading] = useState(true);
 
-  const filteredCourses = courses
-    .filter((course) =>
-      activeFilter === "Todos"
-        ? true
-        : course.status === filterToStatus[activeFilter],
-    )
-    .filter((course) =>
-      course.title.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+  useEffect(() => {
+    getAllCourses()
+      .then(setCourses)
+      .finally(() => setLoading(false));
+  }, []);
 
-  const visibleCourses = sortCourses(filteredCourses, sortBy);
+  const filteredCourses = courses.filter((course) =>
+    course.title.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
     <Layout>
@@ -64,7 +32,6 @@ function Courses() {
           </p>
         </div>
 
-        {/* Buscador */}
         <div className="relative w-80">
           <Search
             size={18}
@@ -81,49 +48,19 @@ function Courses() {
         </div>
       </section>
 
-      {/* Filtros + orden */}
-      <section className="mt-8 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-8">
-        <div className="flex flex-wrap gap-3">
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`rounded-lg px-5 py-2 text-sm font-medium transition-all duration-200 ${
-                activeFilter === filter
-                  ? "bg-primary text-white shadow-sm"
-                  : "border border-border bg-surface text-text-secondary hover:border-navy/20 hover:text-navy"
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-
-        <label className="flex items-center gap-2 text-sm text-text-secondary">
-          Ordenar por
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-navy focus:border-primary focus:outline-none"
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </section>
-
       {/* Cursos */}
       <section className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {visibleCourses.map((course) => (
-          <CourseCard key={course.id} course={course} />
-        ))}
-
-        {visibleCourses.length === 0 && (
+        {loading ? (
+          <p className="col-span-full text-center text-text-secondary">
+            Cargando cursos...
+          </p>
+        ) : filteredCourses.length > 0 ? (
+          filteredCourses.map((course) => (
+            <CourseCard key={course.id} course={course} />
+          ))
+        ) : (
           <p className="col-span-full py-12 text-center text-text-secondary">
-            No se encontraron cursos con estos criterios.
+            No se encontraron cursos.
           </p>
         )}
       </section>

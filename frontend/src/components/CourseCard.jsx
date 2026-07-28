@@ -1,32 +1,17 @@
 import { Link } from "react-router-dom";
-import { Clock3, Layers } from "lucide-react";
+import { Clock3 } from "lucide-react";
 
 import { varkBadgeClass } from "../utils/vark";
-import {
-  getModuleCount,
-  getTotalMinutes,
-  getRemainingMinutes,
-} from "../utils/courseStats";
 import { formatDuration } from "../utils/format";
 
-const statusBadgeClass = {
-  Pendiente: "badge-neutral",
-  "En progreso": "badge-blue",
-  Completado: "badge-success",
-};
-
 function CourseCard({ course, compact = false }) {
-  const { id, title, instructor, image, progress, learningStyle, status } =
+  const { id, title, imageUrl, progress, learningStyle, remainingMinutes } =
     course;
 
-  const remainingMinutes = getRemainingMinutes(course);
-
-  // Versión compacta: para filas dentro de otras secciones (ej. "Continuar
-  // viendo" en el Dashboard), donde la card completa se ve sobredimensionada.
   if (compact) {
     return (
       <Link to={`/courses/${id}`} className="card-media block">
-        <img src={image} alt={title} className="h-24 w-full object-cover" />
+        <img src={imageUrl} alt={title} className="h-24 w-full object-cover" />
 
         <div className="p-4">
           <span className={`badge ${varkBadgeClass[learningStyle]}`}>
@@ -38,12 +23,12 @@ function CourseCard({ course, compact = false }) {
           <div className="mt-3">
             <div className="mb-1.5 flex items-center justify-between">
               <span className="text-xs text-text-secondary">
-                {status === "Completado"
-                  ? "Completado"
-                  : `${formatDuration(remainingMinutes)} restantes`}
+                {formatDuration(remainingMinutes)} restantes
               </span>
+
               <span className="text-xs font-medium text-navy">{progress}%</span>
             </div>
+
             <div className="progress-track">
               <div
                 className="progress-fill"
@@ -56,47 +41,31 @@ function CourseCard({ course, compact = false }) {
     );
   }
 
-  const totalMinutes = getTotalMinutes(course);
-  const moduleCount = getModuleCount(course);
-
   return (
     <Link to={`/courses/${id}`} className="card-media block">
-      <img src={image} alt={title} className="h-40 w-full object-cover" />
+      <img src={imageUrl} alt={title} className="h-40 w-full object-cover" />
 
-      {/* Contenido */}
       <div className="p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`badge ${varkBadgeClass[learningStyle]}`}>
-            {learningStyle}
-          </span>
-          <span className={`badge ${statusBadgeClass[status]}`}>{status}</span>
-        </div>
+        <span className={`badge ${varkBadgeClass[learningStyle]}`}>
+          {learningStyle}
+        </span>
 
         <h3 className="mt-3 text-base">{title}</h3>
-        <p className="mt-1 text-sm text-text-secondary">{instructor}</p>
 
-        {/* Duración y número de módulos */}
-        <div className="mt-3 flex items-center gap-4 text-xs text-text-secondary">
-          <span className="flex items-center gap-1">
-            <Clock3 className="h-3.5 w-3.5" />
-            {formatDuration(totalMinutes)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Layers className="h-3.5 w-3.5" />
-            {moduleCount} módulos
-          </span>
+        <div className="mt-3 flex items-center gap-2 text-xs text-text-secondary">
+          <Clock3 className="h-3.5 w-3.5" />
+          {formatDuration(remainingMinutes)} restantes
         </div>
 
-        {/* Progreso + tiempo restante */}
         <div className="mt-5">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm text-text-secondary">
-              {status === "Completado"
-                ? "Completado"
-                : `${formatDuration(remainingMinutes)} restantes`}
+              {formatDuration(remainingMinutes)} restantes
             </span>
+
             <span className="text-sm font-medium text-navy">{progress}%</span>
           </div>
+
           <div className="progress-track">
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>

@@ -107,7 +107,6 @@ public class ContentService {
                 .url(content.getUrl())
                 .type(content.getType())
                 .learningStyle(content.getLearningStyle())
-                .moduleId(content.getModule().getId())
                 .build();
     }
 
