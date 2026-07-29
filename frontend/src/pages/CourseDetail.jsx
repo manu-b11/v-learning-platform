@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 
 import Layout from "../components/Layout";
 import Breadcrumbs from "../components/Breadcrumbs";
-import { varkBadgeClass } from "../utils/vark";
+import { varkBadgeClass, varkEnumToLabel } from "../utils/vark";
 
 import { getCourseById } from "../api/courseService";
 import { getModulesByCourse } from "../api/moduleService";
@@ -49,6 +49,8 @@ function CourseDetail() {
   }
 
   const firstModuleId = modules[0]?.id;
+  const styleLabel =
+    varkEnumToLabel[course.learningStyle] ?? course.learningStyle;
 
   return (
     <Layout>
@@ -70,8 +72,8 @@ function CourseDetail() {
         <div className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <span className={`badge ${varkBadgeClass[course.learningStyle]}`}>
-                {course.learningStyle}
+              <span className={`badge ${varkBadgeClass[styleLabel]}`}>
+                {styleLabel}
               </span>
 
               <h1 className="mt-3 tracking-tight">{course.title}</h1>
@@ -135,6 +137,12 @@ function CourseDetail() {
               <ChevronRight className="h-5 w-5 shrink-0 text-text-secondary" />
             </Link>
           ))}
+
+          {modules.length === 0 && (
+            <p className="p-5 text-sm text-text-secondary">
+              Este curso todavía no tiene módulos.
+            </p>
+          )}
         </div>
       </section>
     </Layout>

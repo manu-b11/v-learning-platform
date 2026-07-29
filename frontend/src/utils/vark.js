@@ -8,8 +8,8 @@ export const varkBadgeClass = {
 export const varkEnumToLabel = {
   VISUAL: "Visual",
   AUDITORY: "Auditivo",
-  READ_WRITE: "Lectura/Escritura",
-  KINAESTHETIC: "Kinestésico",
+  READING_WRITING: "Lectura/Escritura",
+  KINESTHETIC: "Kinestésico",
 };
 
 export const varkSolidClass = {

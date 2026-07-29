@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { CircleCheck, Circle, Info } from "lucide-react";
 
@@ -6,26 +6,58 @@ import Layout from "../components/Layout";
 import Breadcrumbs from "../components/Breadcrumbs";
 import ContentPlayer from "../components/ContentPlayer";
 import ContentTypeIcon from "../utils/ContentTypeIcon";
-import { getCourseById, getModuleById } from "../data/courses";
 import { formatDuration } from "../utils/format";
+
+import { getCourseById } from "../api/courseService";
+import { getModuleById } from "../api/moduleService";
 
 function ModuleContent() {
   const { id, moduleId } = useParams();
-  const course = getCourseById(id);
-  const module = getModuleById(course, moduleId);
 
-  // si no hay contenido para el estilo del usuario,
-  // se hace fallback al contenido de tipo Lectura/Escritura como respaldo
-  const preferred = module?.contents.find(
-    (c) => c.style === course?.learningStyle,
-  );
-  const fallback = module?.contents.find(
-    (c) => c.style === "Lectura/Escritura",
-  );
-  const defaultContent = preferred || fallback || module?.contents[0];
+  const [course, setCourse] = useState(null);
+  const [module, setModule] = useState(null);
 
-  const [selectedId, setSelectedId] = useState(defaultContent?.id);
-  const [isFallback, setIsFallback] = useState(Boolean(!preferred && fallback));
+  const [selectedContent, setSelectedContent] = useState(null);
+  const [isFallback, setIsFallback] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const courseData = await getCourseById(id);
+        const moduleData = await getModuleById(moduleId);
+
+        setCourse(courseData);
+        setModule(moduleData);
+
+        const preferred = moduleData.contents.find(
+          (c) => c.learningStyle === courseData.learningStyle,
+        );
+
+        const fallback = moduleData.contents.find(
+          (c) => c.learningStyle === "READING_WRITING",
+        );
+
+        const initial = preferred || fallback || moduleData.contents[0] || null;
+
+        setSelectedContent(initial);
+        setIsFallback(!preferred && Boolean(fallback));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [id, moduleId]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <p className="text-text-secondary">Cargando...</p>
+      </Layout>
+    );
+  }
 
   if (!course || !module) {
     return (
@@ -35,17 +67,16 @@ function ModuleContent() {
     );
   }
 
-  const selectedContent =
-    module.contents.find((c) => c.id === selectedId) ?? defaultContent;
-
   const currentIndex = module.contents.findIndex(
-    (c) => c.id === selectedContent.id,
+    (c) => c.id === selectedContent?.id,
   );
+
   const nextContent = module.contents[currentIndex + 1];
-  const isRecommended = selectedContent.style === course.learningStyle;
+
+  const isRecommended = selectedContent?.learningStyle === course.learningStyle;
 
   function handleSelect(content) {
-    setSelectedId(content.id);
+    setSelectedContent(content);
     setIsFallback(false);
   }
 
@@ -66,11 +97,11 @@ function ModuleContent() {
         <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-background px-4 py-3 text-sm text-text-secondary">
           <Info className="h-4 w-4 shrink-0 translate-y-0.5" />
           <p>
-            Este módulo no tiene contenido en tu estilo{" "}
+            Este módulo no tiene contenido para tu estilo{" "}
             <strong className="font-medium text-navy">
               {course.learningStyle}
             </strong>
-            , así que te mostramos la versión de lectura como alternativa.
+            , así que se muestra el contenido disponible.
           </p>
         </div>
       )}
@@ -88,7 +119,7 @@ function ModuleContent() {
               key={content.id}
               onClick={() => handleSelect(content)}
               className={`flex w-full items-center gap-3 p-4 text-left transition-colors duration-200 ${
-                content.id === selectedContent.id
+                selectedContent?.id === content.id
                   ? "bg-background"
                   : "hover:bg-background"
               }`}
@@ -102,8 +133,9 @@ function ModuleContent() {
                 <p className="truncate text-sm font-medium text-navy">
                   {content.title}
                 </p>
+
                 <p className="mt-0.5 text-xs text-text-secondary">
-                  {formatDuration(content.durationMinutes)}
+                  {formatDuration(content.durationMinutes ?? 0)}
                 </p>
               </div>
 

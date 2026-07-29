@@ -1,10 +1,19 @@
-import { PlayCircle, FileText, BookOpen, Puzzle } from "lucide-react";
+import {
+  PlayCircle,
+  Headphones,
+  FileText,
+  Image,
+  ClipboardCheck,
+  Puzzle,
+} from "lucide-react";
 
 const icons = {
-  video: PlayCircle,
-  pdf: FileText,
-  reading: BookOpen,
-  interactive: Puzzle,
+  VIDEO: PlayCircle,
+  PODCAST: Headphones,
+  PDF: FileText,
+  IMAGE: Image,
+  QUIZ: ClipboardCheck,
+  SIMULATION: Puzzle,
 };
 
 function ContentTypeIcon({ type, className }) {

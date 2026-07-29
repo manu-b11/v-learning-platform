@@ -1,59 +1,96 @@
-import { BookOpen, ChevronRight } from "lucide-react";
+import {
+  ChevronRight,
+  ExternalLink,
+  Headphones,
+  Puzzle,
+  ClipboardCheck,
+} from "lucide-react";
 
-import { varkBadgeClass } from "../utils/vark";
+import { varkBadgeClass, varkEnumToLabel } from "../utils/vark";
 import { formatDuration } from "../utils/format";
 
 function ContentPlayer({ content, isRecommended, onNext }) {
   if (!content) return null;
 
-  const isTextBased =
-    content.type === "reading" || content.type === "interactive";
+  const styleLabel =
+    varkEnumToLabel[content.learningStyle] ?? content.learningStyle;
 
   return (
     <div className="card-media">
-      {content.type === "video" && (
+      {content.type === "VIDEO" && (
         <video
           controls
           className="h-72 w-full bg-navy object-cover sm:h-96"
-          key={content.videoUrl}
+          key={content.url}
         >
-          <source src={content.videoUrl} type="video/mp4" />
+          <source src={content.url} />
         </video>
       )}
 
-      {content.type === "pdf" && (
+      {content.type === "PDF" && (
         <iframe
           title={content.title}
-          src={content.pdfUrl}
+          src={content.url}
           className="h-72 w-full sm:h-96"
         />
       )}
 
-      {isTextBased && (
-        <div className="flex h-40 items-center justify-center bg-background">
-          <BookOpen className="h-10 w-10 text-border" />
+      {content.type === "IMAGE" && (
+        <img
+          src={content.url}
+          alt={content.title}
+          className="h-72 w-full object-cover sm:h-96"
+        />
+      )}
+
+      {content.type === "PODCAST" && (
+        <div className="flex h-40 flex-col items-center justify-center gap-4 bg-background px-6">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-teal-light">
+            <Headphones className="h-6 w-6 text-accent-teal" />
+          </div>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <audio controls src={content.url} className="w-full max-w-sm" />
+        </div>
+      )}
+
+      {(content.type === "QUIZ" || content.type === "SIMULATION") && (
+        <div className="flex h-40 flex-col items-center justify-center gap-3 bg-background px-6">
+          {content.type === "QUIZ" ? (
+            <ClipboardCheck className="h-8 w-8 text-text-secondary" />
+          ) : (
+            <Puzzle className="h-8 w-8 text-text-secondary" />
+          )}
+          <a
+            href={content.url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors duration-200 hover:text-navy"
+          >
+            Abrir {content.type === "QUIZ" ? "quiz" : "simulación"}
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </div>
       )}
 
       <div className="p-6">
-        <span className={`badge ${varkBadgeClass[content.style]}`}>
-          {content.style}
+        <span className={`badge ${varkBadgeClass[styleLabel]}`}>
+          {styleLabel}
         </span>
 
         {isRecommended && (
           <p className="mt-2 text-xs font-medium text-success">
-            Recomendado para tu estilo {content.style}
+            Recomendado para tu estilo {styleLabel}
           </p>
         )}
 
         <h2 className="mt-3">{content.title}</h2>
         <p className="mt-1 text-sm text-text-secondary">
-          {formatDuration(content.durationMinutes)}
+          {formatDuration(content.durationMinutes ?? 0)}
         </p>
 
-        {isTextBased && (
+        {content.description && (
           <p className="mt-4 text-sm leading-relaxed text-text-secondary">
-            {content.text}
+            {content.description}
           </p>
         )}
 
