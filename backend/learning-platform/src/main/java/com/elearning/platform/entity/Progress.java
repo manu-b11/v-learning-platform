@@ -22,10 +22,6 @@ public class Progress {
 
     @Builder.Default
     @Column(nullable = false)
-    private Double score = 0.0;
-
-    @Builder.Default
-    @Column(nullable = false)
     private Boolean completed = false;
 
     @ManyToOne(fetch = FetchType.LAZY)

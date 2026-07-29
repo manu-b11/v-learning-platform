@@ -21,11 +21,6 @@ public class UpdateProgressRequest {
     @Max(value = 100, message = "El progreso no puede ser mayor a 100")
     private Double completionPercentage;
 
-    @NotNull(message = "La calificación es obligatoria")
-    @Min(value = 0, message = "La calificación no puede ser menor a 0")
-    @Max(value = 100, message = "La calificación no puede ser mayor a 100")
-    private Double score;
-
     @NotNull(message = "Debe indicar si el contenido está completado")
     private Boolean completed;
 

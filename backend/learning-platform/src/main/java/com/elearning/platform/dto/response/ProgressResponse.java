@@ -25,8 +25,6 @@ public class ProgressResponse {
 
     private Double completionPercentage;
 
-    private Double score;
-
     private Boolean completed;
 
 }

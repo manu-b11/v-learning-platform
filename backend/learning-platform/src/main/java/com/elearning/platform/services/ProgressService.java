@@ -48,7 +48,7 @@ public class ProgressService {
         progress.setCompletionPercentage(
                 request.getCompletionPercentage()
         );
-        progress.setScore(request.getScore());
+
         progress.setCompleted(request.getCompleted());
 
         Progress savedProgress = progressRepository.save(progress);
@@ -91,7 +91,6 @@ public class ProgressService {
                 .moduleId(progress.getContent().getModule().getId())
                 .moduleTitle(progress.getContent().getModule().getTitle())
                 .completionPercentage(progress.getCompletionPercentage())
-                .score(progress.getScore())
                 .completed(progress.getCompleted())
                 .build();
     }
