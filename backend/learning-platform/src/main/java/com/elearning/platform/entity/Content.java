@@ -24,6 +24,9 @@ public class Content {
     @Column(nullable = false)
     private String url;
 
+   @Column(nullable = false, columnDefinition = "TEXT")
+    private String description;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ContentType type;
@@ -31,6 +34,8 @@ public class Content {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LearningStyle learningStyle;
+
+    private Integer durationMinutes;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "module_id", nullable = false)

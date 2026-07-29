@@ -2,9 +2,9 @@ package com.elearning.platform.services;
 
 import com.elearning.platform.dto.request.CreateModuleRequest;
 import com.elearning.platform.dto.request.UpdateModuleRequest;
+import com.elearning.platform.dto.response.ContentResponse;
 import com.elearning.platform.dto.response.ModuleDetailResponse;
 import com.elearning.platform.dto.response.ModuleResponse;
-import com.elearning.platform.dto.response.ContentResponse;
 import com.elearning.platform.entity.Course;
 import com.elearning.platform.entity.Module;
 import com.elearning.platform.repository.CourseRepository;
@@ -105,24 +105,29 @@ public class ModuleService {
                 .build();
     }
 
-    // Construir respuesta para detalle
-    private ModuleDetailResponse buildDetailResponse(Module module) {
+   // Construir respuesta para detalle
+private ModuleDetailResponse buildDetailResponse(Module module) {
 
-        return ModuleDetailResponse.builder()
-                .id(module.getId())
-                .title(module.getTitle())
-                .description(module.getDescription())
-                .orderNumber(module.getOrderNumber())
-                .contents(
-                        module.getContents()
-                                .stream()
-                                .map(content -> ContentResponse.builder()
-                                        .id(content.getId())
-                                        .title(content.getTitle())
-                                        .build())
-                                .toList()
-                )
-                .build();
-    }
+    return ModuleDetailResponse.builder()
+            .id(module.getId())
+            .title(module.getTitle())
+            .description(module.getDescription())
+            .orderNumber(module.getOrderNumber())
+            .contents(
+                    module.getContents()
+                            .stream()
+                            .map(content -> ContentResponse.builder()
+                                    .id(content.getId())
+                                    .title(content.getTitle())
+                                    .url(content.getUrl())
+                                    .description(content.getDescription())
+                                    .type(content.getType())
+                                    .learningStyle(content.getLearningStyle())
+                                    .durationMinutes(content.getDurationMinutes())
+                                    .build())
+                            .toList()
+            )
+            .build();
+}
 
 }

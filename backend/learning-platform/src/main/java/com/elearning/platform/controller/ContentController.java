@@ -13,13 +13,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class ContentController {
 
     private final ContentService contentService;
 
     // Crear contenido
-    @PostMapping("/api/modules/{moduleId}/contents")
+    @PostMapping("/modules/{moduleId}/contents")
     public ResponseEntity<ContentResponse> createContent(
             @PathVariable Long moduleId,
             @Valid @RequestBody CreateContentRequest request
@@ -32,7 +33,7 @@ public class ContentController {
     }
 
     // Obtener contenidos de un módulo
-    @GetMapping("/api/modules/{moduleId}/contents")
+    @GetMapping("/modules/{moduleId}/contents")
     public ResponseEntity<List<ContentResponse>> getContentsByModule(
             @PathVariable Long moduleId
     ) {
@@ -44,7 +45,7 @@ public class ContentController {
     }
 
     // Obtener contenido por id
-    @GetMapping("/api/contents/{id}")
+    @GetMapping("/contents/{id}")
     public ResponseEntity<ContentResponse> getContentById(
             @PathVariable Long id
     ) {
@@ -56,7 +57,7 @@ public class ContentController {
     }
 
     // Actualizar contenido
-    @PutMapping("/api/contents/{id}")
+    @PutMapping("/contents/{id}")
     public ResponseEntity<ContentResponse> updateContent(
             @PathVariable Long id,
             @Valid @RequestBody UpdateContentRequest request
@@ -69,7 +70,7 @@ public class ContentController {
     }
 
     // Eliminar contenido
-    @DeleteMapping("/api/contents/{id}")
+    @DeleteMapping("/contents/{id}")
     public ResponseEntity<Void> deleteContent(
             @PathVariable Long id
     ) {

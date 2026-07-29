@@ -33,14 +33,15 @@ public class ContentService {
         Content content = Content.builder()
                 .title(request.getTitle())
                 .url(request.getUrl())
+                .description(request.getDescription())
                 .type(request.getType())
                 .learningStyle(request.getLearningStyle())
+                .durationMinutes(request.getDurationMinutes())
                 .module(module)
                 .build();
 
         contentRepository.save(content);
 
-        // Construir respuesta
         return buildResponse(content);
     }
 
@@ -61,7 +62,6 @@ public class ContentService {
                         new RuntimeException("Contenido no encontrado")
                 );
 
-        // Construir respuesta
         return buildResponse(content);
     }
 
@@ -78,12 +78,13 @@ public class ContentService {
 
         content.setTitle(request.getTitle());
         content.setUrl(request.getUrl());
+        content.setDescription(request.getDescription());
         content.setType(request.getType());
         content.setLearningStyle(request.getLearningStyle());
+        content.setDurationMinutes(request.getDurationMinutes());
 
         contentRepository.save(content);
 
-        // Construir respuesta
         return buildResponse(content);
     }
 
@@ -105,8 +106,10 @@ public class ContentService {
                 .id(content.getId())
                 .title(content.getTitle())
                 .url(content.getUrl())
+                .description(content.getDescription())
                 .type(content.getType())
                 .learningStyle(content.getLearningStyle())
+                .durationMinutes(content.getDurationMinutes())
                 .build();
     }
 

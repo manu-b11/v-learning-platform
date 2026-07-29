@@ -2,6 +2,7 @@ package com.elearning.platform.dto.request;
 
 import com.elearning.platform.enums.ContentType;
 import com.elearning.platform.enums.LearningStyle;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -22,5 +23,12 @@ public class UpdateContentRequest {
 
     @NotNull(message = "El estilo de aprendizaje es obligatorio")
     private LearningStyle learningStyle;
+
+    @NotNull(message = "La duración es obligatoria")
+    @Min(value = 1, message = "La duración debe ser mayor a 0")
+    private Integer durationMinutes;
+
+    @NotBlank(message = "La descripción es obligatoria")
+    private String description;
 
 }

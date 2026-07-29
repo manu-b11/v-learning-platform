@@ -8,16 +8,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ContentResponse {
 
     private Long id;
 
     private String title;
+
+    private String description;
 
     private String url;
 
@@ -25,4 +27,5 @@ public class ContentResponse {
 
     private LearningStyle learningStyle;
 
+    private Integer durationMinutes;
 }
