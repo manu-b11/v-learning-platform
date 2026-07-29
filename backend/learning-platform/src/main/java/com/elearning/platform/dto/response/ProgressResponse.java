@@ -15,6 +15,10 @@ public class ProgressResponse {
 
     private Long id;
 
+    private Long contentId;
+
+    private String contentTitle;
+
     private Long moduleId;
 
     private String moduleTitle;

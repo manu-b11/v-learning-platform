@@ -8,13 +8,11 @@ import java.util.Optional;
 
 public interface ProgressRepository extends JpaRepository<Progress, Long> {
 
-    
     List<Progress> findByUserId(Long userId);
 
-
-    Optional<Progress> findByUserIdAndModuleId(
+    Optional<Progress> findByUserIdAndContentId(
             Long userId,
-            Long moduleId
+            Long contentId
     );
 
 }

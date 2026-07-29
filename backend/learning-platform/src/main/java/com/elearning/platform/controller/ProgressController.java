@@ -11,27 +11,26 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/progress")
 @RequiredArgsConstructor
 public class ProgressController {
 
     private final ProgressService progressService;
 
-    // Actualizar progreso del módulo
-    @PutMapping("/modules/{moduleId}")
+    // Actualizar progreso de un contenido
+    @PutMapping("/api/contents/{contentId}/progress")
     public ResponseEntity<ProgressResponse> updateProgress(
-            @PathVariable Long moduleId,
+            @PathVariable Long contentId,
             @Valid @RequestBody UpdateProgressRequest request
     ) {
 
         ProgressResponse progress =
-                progressService.updateProgress(moduleId, request);
+                progressService.updateProgress(contentId, request);
 
         return ResponseEntity.ok(progress);
     }
 
-    // Obtener progreso del usuario
-    @GetMapping("/me")
+    // Obtener progreso del usuario autenticado
+    @GetMapping("/api/progress/me")
     public ResponseEntity<List<ProgressResponse>> getMyProgress() {
 
         List<ProgressResponse> progress =

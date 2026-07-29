@@ -2,10 +2,10 @@ package com.elearning.platform.services;
 
 import com.elearning.platform.dto.request.UpdateProgressRequest;
 import com.elearning.platform.dto.response.ProgressResponse;
-import com.elearning.platform.entity.Module;
+import com.elearning.platform.entity.Content;
 import com.elearning.platform.entity.Progress;
 import com.elearning.platform.entity.User;
-import com.elearning.platform.repository.ModuleRepository;
+import com.elearning.platform.repository.ContentRepository;
 import com.elearning.platform.repository.ProgressRepository;
 import com.elearning.platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,35 +21,27 @@ public class ProgressService {
 
     private final ProgressRepository progressRepository;
     private final UserRepository userRepository;
-    private final ModuleRepository moduleRepository;
+    private final ContentRepository contentRepository;
 
-    // Actualizar progreso del módulo
+    // Actualizar progreso del contenido
     public ProgressResponse updateProgress(
-            Long moduleId,
+            Long contentId,
             UpdateProgressRequest request
     ) {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        User user = getAuthenticatedUser();
 
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
+        Content content = contentRepository.findById(contentId)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
-                );
-
-        Module module = moduleRepository.findById(moduleId)
-                .orElseThrow(() ->
-                        new RuntimeException("Módulo no encontrado")
+                        new RuntimeException("Contenido no encontrado")
                 );
 
         Progress progress = progressRepository
-                .findByUserIdAndModuleId(user.getId(), moduleId)
+                .findByUserIdAndContentId(user.getId(), contentId)
                 .orElse(
                         Progress.builder()
                                 .user(user)
-                                .module(module)
+                                .content(content)
                                 .build()
                 );
 
@@ -59,24 +51,15 @@ public class ProgressService {
         progress.setScore(request.getScore());
         progress.setCompleted(request.getCompleted());
 
-        progressRepository.save(progress);
+        Progress savedProgress = progressRepository.save(progress);
 
-        // Construir respuesta
-        return buildResponse(progress);
+        return buildResponse(savedProgress);
     }
 
     // Obtener progreso del usuario
     public List<ProgressResponse> getMyProgress() {
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
-                );
+        User user = getAuthenticatedUser();
 
         return progressRepository.findByUserId(user.getId())
                 .stream()
@@ -84,13 +67,29 @@ public class ProgressService {
                 .toList();
     }
 
+    // Obtener usuario autenticado
+    private User getAuthenticatedUser() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("Usuario no encontrado")
+                );
+    }
+
     // Construir respuesta
     private ProgressResponse buildResponse(Progress progress) {
 
         return ProgressResponse.builder()
                 .id(progress.getId())
-                .moduleId(progress.getModule().getId())
-                .moduleTitle(progress.getModule().getTitle())
+                .contentId(progress.getContent().getId())
+                .contentTitle(progress.getContent().getTitle())
+                .moduleId(progress.getContent().getModule().getId())
+                .moduleTitle(progress.getContent().getModule().getTitle())
                 .completionPercentage(progress.getCompletionPercentage())
                 .score(progress.getScore())
                 .completed(progress.getCompleted())

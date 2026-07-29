@@ -16,17 +16,17 @@ import lombok.Setter;
 @Builder
 public class UpdateProgressRequest {
 
-    @NotNull
-    @Min(0)
-    @Max(100)
+    @NotNull(message = "El porcentaje de progreso es obligatorio")
+    @Min(value = 0, message = "El progreso no puede ser menor a 0")
+    @Max(value = 100, message = "El progreso no puede ser mayor a 100")
     private Double completionPercentage;
 
-    @NotNull
-    @Min(0)
-    @Max(100)
+    @NotNull(message = "La calificación es obligatoria")
+    @Min(value = 0, message = "La calificación no puede ser menor a 0")
+    @Max(value = 100, message = "La calificación no puede ser mayor a 100")
     private Double score;
 
-    @NotNull
+    @NotNull(message = "Debe indicar si el contenido está completado")
     private Boolean completed;
 
 }

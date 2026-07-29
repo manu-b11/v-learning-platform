@@ -16,20 +16,24 @@ public class Progress {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Double completionPercentage;
+    private Double completionPercentage = 0.0;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Double score;
+    private Double score = 0.0;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Boolean completed;
+    private Boolean completed = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "module_id", nullable = false)
-    private Module module;
+    @JoinColumn(name = "content_id", nullable = false)
+    private Content content;
+
 }
