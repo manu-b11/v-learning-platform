@@ -2,6 +2,7 @@ package com.elearning.platform.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,17 +10,18 @@ import lombok.Setter;
 @Setter
 public class RegisterRequest {
 
-    @NotBlank
+    @NotBlank(message = "El nombre es obligatorio")
     private String firstName;
 
-    @NotBlank
+    @NotBlank(message = "El apellido es obligatorio")
     private String lastName;
 
-    @Email
-    @NotBlank
+    @NotBlank(message = "El correo electrónico es obligatorio")
+    @Email(message = "Debe ingresar un correo electrónico válido")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     private String password;
 
 }
