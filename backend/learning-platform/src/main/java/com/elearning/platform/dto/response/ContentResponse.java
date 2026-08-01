@@ -28,4 +28,8 @@ public class ContentResponse {
     private LearningStyle learningStyle;
 
     private Integer durationMinutes;
+
+    private Double completionPercentage;
+    
+    private Boolean completed;
 }

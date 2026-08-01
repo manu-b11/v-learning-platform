@@ -23,6 +23,8 @@ public class ModuleDetailResponse {
 
     private Integer orderNumber;
 
+    private Integer progress;
+
     private List<ContentResponse> contents;
 
 }

@@ -2,14 +2,18 @@ package com.elearning.platform.services;
 
 import com.elearning.platform.dto.request.CreateModuleRequest;
 import com.elearning.platform.dto.request.UpdateModuleRequest;
-import com.elearning.platform.dto.response.ContentResponse;
 import com.elearning.platform.dto.response.ModuleDetailResponse;
 import com.elearning.platform.dto.response.ModuleResponse;
 import com.elearning.platform.entity.Course;
 import com.elearning.platform.entity.Module;
+import com.elearning.platform.mapper.ModuleMapper;
+import com.elearning.platform.entity.User;
 import com.elearning.platform.repository.CourseRepository;
 import com.elearning.platform.repository.ModuleRepository;
+import com.elearning.platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +24,8 @@ public class ModuleService {
 
     private final ModuleRepository moduleRepository;
     private final CourseRepository courseRepository;
+    private final UserRepository userRepository;
+    private final ModuleMapper moduleMapper;
 
     // Crear módulo
     public ModuleDetailResponse createModule(
@@ -39,17 +45,22 @@ public class ModuleService {
                 .course(course)
                 .build();
 
-        moduleRepository.save(module);
+        Module savedModule = moduleRepository.save(module);
 
-        return buildDetailResponse(module);
+        return moduleMapper.toDetailResponse(
+                savedModule,
+                getAuthenticatedUser()
+        );
     }
 
     // Obtener módulos de un curso
     public List<ModuleResponse> getModulesByCourse(Long courseId) {
 
+        User user = getAuthenticatedUser();
+
         return moduleRepository.findByCourseIdOrderByOrderNumberAsc(courseId)
                 .stream()
-                .map(this::buildResponse)
+                .map(module -> moduleMapper.toResponse(module, user))
                 .toList();
     }
 
@@ -61,7 +72,10 @@ public class ModuleService {
                         new RuntimeException("Módulo no encontrado")
                 );
 
-        return buildDetailResponse(module);
+        return moduleMapper.toDetailResponse(
+                module,
+                getAuthenticatedUser()
+        );
     }
 
     // Actualizar módulo
@@ -79,9 +93,12 @@ public class ModuleService {
         module.setDescription(request.getDescription());
         module.setOrderNumber(request.getOrderNumber());
 
-        moduleRepository.save(module);
+        Module savedModule = moduleRepository.save(module);
 
-        return buildDetailResponse(module);
+        return moduleMapper.toDetailResponse(
+                savedModule,
+                getAuthenticatedUser()
+        );
     }
 
     // Eliminar módulo
@@ -95,39 +112,18 @@ public class ModuleService {
         moduleRepository.delete(module);
     }
 
-    // Construir respuesta para listado
-    private ModuleResponse buildResponse(Module module) {
+    // Obtener usuario autenticado
+    private User getAuthenticatedUser() {
 
-        return ModuleResponse.builder()
-                .id(module.getId())
-                .title(module.getTitle())
-                .orderNumber(module.getOrderNumber())
-                .build();
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("Usuario no encontrado")
+                );
     }
-
-   // Construir respuesta para detalle
-private ModuleDetailResponse buildDetailResponse(Module module) {
-
-    return ModuleDetailResponse.builder()
-            .id(module.getId())
-            .title(module.getTitle())
-            .description(module.getDescription())
-            .orderNumber(module.getOrderNumber())
-            .contents(
-                    module.getContents()
-                            .stream()
-                            .map(content -> ContentResponse.builder()
-                                    .id(content.getId())
-                                    .title(content.getTitle())
-                                    .url(content.getUrl())
-                                    .description(content.getDescription())
-                                    .type(content.getType())
-                                    .learningStyle(content.getLearningStyle())
-                                    .durationMinutes(content.getDurationMinutes())
-                                    .build())
-                            .toList()
-            )
-            .build();
-}
 
 }

@@ -17,6 +17,9 @@ public class Evaluation {
     private Long id;
 
     @Column(nullable = false)
+    private Integer orderNumber;
+
+    @Column(nullable = false, length = 150)
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -28,4 +31,5 @@ public class Evaluation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "module_id", nullable = false)
     private Module module;
+
 }

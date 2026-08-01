@@ -5,9 +5,14 @@ import com.elearning.platform.dto.request.UpdateContentRequest;
 import com.elearning.platform.dto.response.ContentResponse;
 import com.elearning.platform.entity.Content;
 import com.elearning.platform.entity.Module;
+import com.elearning.platform.entity.User;
+import com.elearning.platform.mapper.ContentMapper;
 import com.elearning.platform.repository.ContentRepository;
 import com.elearning.platform.repository.ModuleRepository;
+import com.elearning.platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +23,8 @@ public class ContentService {
 
     private final ContentRepository contentRepository;
     private final ModuleRepository moduleRepository;
+    private final UserRepository userRepository;
+    private final ContentMapper contentMapper;
 
     // Crear contenido
     public ContentResponse createContent(
@@ -40,17 +47,22 @@ public class ContentService {
                 .module(module)
                 .build();
 
-        contentRepository.save(content);
+        Content savedContent = contentRepository.save(content);
 
-        return buildResponse(content);
+        return contentMapper.toResponse(
+                savedContent,
+                getAuthenticatedUser()
+        );
     }
 
     // Obtener contenidos de un módulo
     public List<ContentResponse> getContentsByModule(Long moduleId) {
 
+        User user = getAuthenticatedUser();
+
         return contentRepository.findByModuleId(moduleId)
                 .stream()
-                .map(this::buildResponse)
+                .map(content -> contentMapper.toResponse(content, user))
                 .toList();
     }
 
@@ -62,7 +74,10 @@ public class ContentService {
                         new RuntimeException("Contenido no encontrado")
                 );
 
-        return buildResponse(content);
+        return contentMapper.toResponse(
+                content,
+                getAuthenticatedUser()
+        );
     }
 
     // Actualizar contenido
@@ -83,9 +98,12 @@ public class ContentService {
         content.setLearningStyle(request.getLearningStyle());
         content.setDurationMinutes(request.getDurationMinutes());
 
-        contentRepository.save(content);
+        Content savedContent = contentRepository.save(content);
 
-        return buildResponse(content);
+        return contentMapper.toResponse(
+                savedContent,
+                getAuthenticatedUser()
+        );
     }
 
     // Eliminar contenido
@@ -99,18 +117,18 @@ public class ContentService {
         contentRepository.delete(content);
     }
 
-    // Construir respuesta
-    private ContentResponse buildResponse(Content content) {
+    // Obtener usuario autenticado
+    private User getAuthenticatedUser() {
 
-        return ContentResponse.builder()
-                .id(content.getId())
-                .title(content.getTitle())
-                .url(content.getUrl())
-                .description(content.getDescription())
-                .type(content.getType())
-                .learningStyle(content.getLearningStyle())
-                .durationMinutes(content.getDurationMinutes())
-                .build();
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("Usuario no encontrado")
+                );
     }
 
 }

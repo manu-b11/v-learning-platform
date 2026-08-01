@@ -19,4 +19,6 @@ public class ModuleResponse {
 
     private Integer orderNumber;
 
+    private Integer progress;
+
 }
