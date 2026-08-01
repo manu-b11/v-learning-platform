@@ -16,7 +16,7 @@ public class Badge {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100, unique = true)
     private String name;
 
     @Column(columnDefinition = "TEXT")
@@ -25,7 +25,7 @@ public class Badge {
     @Column(nullable = false)
     private String icon;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(nullable = false)
+    private Integer requiredPoints;
+
 }

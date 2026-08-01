@@ -48,7 +48,7 @@ public class User {
     @Builder.Default
     private Boolean enabled = true;
 
-    @JsonIgnore
+   @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Progress> progresses = new ArrayList<>();
@@ -56,12 +56,13 @@ public class User {
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Badge> badges = new ArrayList<>();
+    private List<UserBadge> userBadges = new ArrayList<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Enrollment> enrollments = new ArrayList<>();
+
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
