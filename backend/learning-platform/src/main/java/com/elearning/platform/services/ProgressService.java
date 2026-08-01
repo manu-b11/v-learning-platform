@@ -20,13 +20,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProgressService {
 
-    private static final int CONTENT_POINTS = 10;
+    private static final int CONTENT_POINTS = 5;
+    private static final int MODULE_POINTS = 20;
+    private static final int COURSE_POINTS = 50;
 
     private final ProgressRepository progressRepository;
     private final UserRepository userRepository;
     private final ContentRepository contentRepository;
     private final UserPointService userPointService;
-    private final BadgeService badgeService;
+    private final ProgressCalculatorService progressCalculatorService;
 
     // Actualizar progreso del contenido
     public ProgressResponse updateProgress(
@@ -50,8 +52,11 @@ public class ProgressService {
                                 .build()
                 );
 
-        // Verificar si el contenido ya estaba completado
         boolean wasCompleted = Boolean.TRUE.equals(progress.getCompleted());
+        boolean wasModuleCompleted = progressCalculatorService
+                .isModuleCompleted(content.getModule(), user);
+        boolean wasCourseCompleted = progressCalculatorService
+                .isCourseCompleted(content.getModule().getCourse(), user);
 
         progress.setCompletionPercentage(
                 request.getCompletionPercentage()
@@ -63,15 +68,22 @@ public class ProgressService {
 
         Progress savedProgress = progressRepository.save(progress);
 
-        // Otorgar puntos solo la primera vez que se completa el contenido
         if (!wasCompleted && Boolean.TRUE.equals(savedProgress.getCompleted())) {
+            userPointService.addPoints(user, CONTENT_POINTS);
+        }
 
-            userPointService.addPoints(
-                    user,
-                    CONTENT_POINTS
-            );
+        boolean isModuleCompleted = progressCalculatorService
+                .isModuleCompleted(content.getModule(), user);
 
-            badgeService.checkBadges(user);
+        if (!wasModuleCompleted && isModuleCompleted) {
+            userPointService.addPoints(user, MODULE_POINTS);
+        }
+
+        boolean isCourseCompleted = progressCalculatorService
+                .isCourseCompleted(content.getModule().getCourse(), user);
+
+        if (!wasCourseCompleted && isCourseCompleted) {
+            userPointService.addPoints(user, COURSE_POINTS);
         }
 
         return buildResponse(savedProgress);

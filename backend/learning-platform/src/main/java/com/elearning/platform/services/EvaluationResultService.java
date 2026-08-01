@@ -20,9 +20,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EvaluationResultService {
 
+    private static final int EVALUATION_POINTS = 30;
+    private static final double PASSING_SCORE = 60.0;
+
     private final EvaluationResultRepository evaluationResultRepository;
     private final EvaluationRepository evaluationRepository;
     private final UserRepository userRepository;
+    private final UserPointService userPointService;
 
     // Presentar evaluación
     public EvaluationResultResponse submitEvaluation(
@@ -49,11 +53,18 @@ public class EvaluationResultService {
                                 .build()
                 );
 
+        boolean wasApproved = Boolean.TRUE.equals(result.getApproved());
+
         result.setScore(request.getScore());
         result.setCompleted(true);
+        result.setApproved(request.getScore() >= PASSING_SCORE);
 
         EvaluationResult savedResult =
                 evaluationResultRepository.save(result);
+
+        if (!wasApproved && Boolean.TRUE.equals(savedResult.getApproved())) {
+            userPointService.addPoints(user, EVALUATION_POINTS);
+        }
 
         return buildResponse(savedResult);
     }

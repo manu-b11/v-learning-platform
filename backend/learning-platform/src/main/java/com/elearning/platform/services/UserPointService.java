@@ -19,6 +19,7 @@ public class UserPointService {
     private final UserPointRepository userPointRepository;
     private final UserRepository userRepository;
     private final UserPointMapper userPointMapper;
+    private final BadgeService badgeService;
 
     // Obtener mis puntos
     public UserPointResponse getMyPoints() {
@@ -57,6 +58,7 @@ public class UserPointService {
         );
 
         userPointRepository.save(userPoint);
+        badgeService.checkBadges(user);
     }
 
     // Obtener usuario autenticado

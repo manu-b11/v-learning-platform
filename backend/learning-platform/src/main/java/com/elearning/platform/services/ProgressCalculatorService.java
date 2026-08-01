@@ -2,9 +2,11 @@ package com.elearning.platform.services;
 
 import com.elearning.platform.entity.Content;
 import com.elearning.platform.entity.Course;
+import com.elearning.platform.entity.EvaluationResult;
 import com.elearning.platform.entity.Module;
 import com.elearning.platform.entity.Progress;
 import com.elearning.platform.entity.User;
+import com.elearning.platform.repository.EvaluationResultRepository;
 import com.elearning.platform.repository.ProgressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class ProgressCalculatorService {
 
     private final ProgressRepository progressRepository;
+    private final EvaluationResultRepository evaluationResultRepository;
 
     // Progreso de un contenido
     public Double getContentCompletionPercentage(
@@ -58,6 +61,38 @@ public class ProgressCalculatorService {
                 / module.getContents().size());
     }
 
+    // Módulo completado
+    public Boolean isModuleCompleted(
+            Module module,
+            User user
+    ) {
+
+        if (module.getContents().isEmpty()) {
+            return false;
+        }
+
+        boolean allContentsCompleted = module.getContents()
+                .stream()
+                .allMatch(content -> isContentCompleted(content, user));
+
+        if (module.getEvaluations().isEmpty()) {
+            return allContentsCompleted;
+        }
+
+        boolean allEvaluationsApproved = module.getEvaluations()
+                .stream()
+                .allMatch(evaluation -> evaluationResultRepository
+                        .findByUserIdAndEvaluationId(
+                                user.getId(),
+                                evaluation.getId()
+                        )
+                        .map(EvaluationResult::getApproved)
+                        .orElse(false)
+                );
+
+        return allContentsCompleted && allEvaluationsApproved;
+    }
+
     // Progreso de un curso
     public Integer getCourseProgress(
             Course course,
@@ -81,6 +116,21 @@ public class ProgressCalculatorService {
 
         return (int) ((completedContents * 100.0)
                 / totalContents);
+    }
+
+    // Curso completado
+    public Boolean isCourseCompleted(
+            Course course,
+            User user
+    ) {
+
+        if (course.getModules().isEmpty()) {
+            return false;
+        }
+
+        return course.getModules()
+                .stream()
+                .allMatch(module -> isModuleCompleted(module, user));
     }
 
     // Minutos restantes del curso

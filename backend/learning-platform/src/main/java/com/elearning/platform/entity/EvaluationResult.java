@@ -23,6 +23,10 @@ public class EvaluationResult {
     @Column(nullable = false)
     private Boolean completed = false;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean approved = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
