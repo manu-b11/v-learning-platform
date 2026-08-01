@@ -10,6 +10,8 @@ public interface BadgeRepository extends JpaRepository<Badge, Long> {
 
     Optional<Badge> findByName(String name);
 
+    boolean existsByName(String name);
+
     List<Badge> findAllByOrderByRequiredPointsAsc();
 
 }

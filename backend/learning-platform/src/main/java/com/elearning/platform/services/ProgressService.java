@@ -1,10 +1,11 @@
 package com.elearning.platform.services;
 
-import com.elearning.platform.dto.response.ProgressResponse;
 import com.elearning.platform.dto.request.UpdateProgressRequest;
+import com.elearning.platform.dto.response.ProgressResponse;
 import com.elearning.platform.entity.Content;
 import com.elearning.platform.entity.Progress;
 import com.elearning.platform.entity.User;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.repository.ContentRepository;
 import com.elearning.platform.repository.ProgressRepository;
 import com.elearning.platform.repository.UserRepository;
@@ -18,6 +19,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProgressService {
+
+    private static final int CONTENT_POINTS = 10;
 
     private final ProgressRepository progressRepository;
     private final UserRepository userRepository;
@@ -35,7 +38,7 @@ public class ProgressService {
 
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() ->
-                        new RuntimeException("Contenido no encontrado")
+                        new ResourceNotFoundException("Contenido no encontrado")
                 );
 
         Progress progress = progressRepository
@@ -47,9 +50,8 @@ public class ProgressService {
                                 .build()
                 );
 
-        // Saber si anteriormente ya estaba completado
-        boolean wasCompleted =
-                Boolean.TRUE.equals(progress.getCompleted());
+        // Verificar si el contenido ya estaba completado
+        boolean wasCompleted = Boolean.TRUE.equals(progress.getCompleted());
 
         progress.setCompletionPercentage(
                 request.getCompletionPercentage()
@@ -61,13 +63,12 @@ public class ProgressService {
 
         Progress savedProgress = progressRepository.save(progress);
 
-        // Solo otorgar puntos la primera vez que completa el contenido
-        if (!wasCompleted &&
-                Boolean.TRUE.equals(savedProgress.getCompleted())) {
+        // Otorgar puntos solo la primera vez que se completa el contenido
+        if (!wasCompleted && Boolean.TRUE.equals(savedProgress.getCompleted())) {
 
             userPointService.addPoints(
                     user,
-                    10
+                    CONTENT_POINTS
             );
 
             badgeService.checkBadges(user);
@@ -91,17 +92,13 @@ public class ProgressService {
     private User getAuthenticatedUser() {
 
         Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
+                SecurityContextHolder.getContext().getAuthentication();
 
         String email = authentication.getName();
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Usuario no encontrado"
-                        )
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
     }
 
@@ -116,9 +113,7 @@ public class ProgressService {
                 .contentTitle(progress.getContent().getTitle())
                 .moduleId(progress.getContent().getModule().getId())
                 .moduleTitle(progress.getContent().getModule().getTitle())
-                .completionPercentage(
-                        progress.getCompletionPercentage()
-                )
+                .completionPercentage(progress.getCompletionPercentage())
                 .completed(progress.getCompleted())
                 .build();
     }

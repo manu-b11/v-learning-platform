@@ -6,6 +6,7 @@ import com.elearning.platform.dto.response.ContentResponse;
 import com.elearning.platform.entity.Content;
 import com.elearning.platform.entity.Module;
 import com.elearning.platform.entity.User;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.mapper.ContentMapper;
 import com.elearning.platform.repository.ContentRepository;
 import com.elearning.platform.repository.ModuleRepository;
@@ -34,7 +35,7 @@ public class ContentService {
 
         Module module = moduleRepository.findById(moduleId)
                 .orElseThrow(() ->
-                        new RuntimeException("Módulo no encontrado")
+                        new ResourceNotFoundException("Módulo no encontrado")
                 );
 
         Content content = Content.builder()
@@ -71,7 +72,7 @@ public class ContentService {
 
         Content content = contentRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Contenido no encontrado")
+                        new ResourceNotFoundException("Contenido no encontrado")
                 );
 
         return contentMapper.toResponse(
@@ -88,7 +89,7 @@ public class ContentService {
 
         Content content = contentRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Contenido no encontrado")
+                        new ResourceNotFoundException("Contenido no encontrado")
                 );
 
         content.setTitle(request.getTitle());
@@ -111,7 +112,7 @@ public class ContentService {
 
         Content content = contentRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Contenido no encontrado")
+                        new ResourceNotFoundException("Contenido no encontrado")
                 );
 
         contentRepository.delete(content);
@@ -127,7 +128,7 @@ public class ContentService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
     }
 

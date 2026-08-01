@@ -3,6 +3,7 @@ package com.elearning.platform.services;
 import com.elearning.platform.dto.response.UserPointResponse;
 import com.elearning.platform.entity.User;
 import com.elearning.platform.entity.UserPoint;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.mapper.UserPointMapper;
 import com.elearning.platform.repository.UserPointRepository;
 import com.elearning.platform.repository.UserRepository;
@@ -68,7 +69,7 @@ public class UserPointService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
     }
 

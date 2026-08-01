@@ -5,6 +5,7 @@ import com.elearning.platform.dto.response.EvaluationResultResponse;
 import com.elearning.platform.entity.Evaluation;
 import com.elearning.platform.entity.EvaluationResult;
 import com.elearning.platform.entity.User;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.repository.EvaluationRepository;
 import com.elearning.platform.repository.EvaluationResultRepository;
 import com.elearning.platform.repository.UserRepository;
@@ -33,7 +34,7 @@ public class EvaluationResultService {
 
         Evaluation evaluation = evaluationRepository.findById(evaluationId)
                 .orElseThrow(() ->
-                        new RuntimeException("Evaluación no encontrada")
+                        new ResourceNotFoundException("Evaluación no encontrada")
                 );
 
         EvaluationResult result = evaluationResultRepository
@@ -78,7 +79,7 @@ public class EvaluationResultService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
     }
 

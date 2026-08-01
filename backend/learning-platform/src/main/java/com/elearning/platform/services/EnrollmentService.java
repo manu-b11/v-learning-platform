@@ -4,6 +4,7 @@ import com.elearning.platform.dto.response.EnrollmentResponse;
 import com.elearning.platform.entity.Course;
 import com.elearning.platform.entity.Enrollment;
 import com.elearning.platform.entity.User;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.repository.CourseRepository;
 import com.elearning.platform.repository.EnrollmentRepository;
 import com.elearning.platform.repository.UserRepository;
@@ -32,12 +33,12 @@ public class EnrollmentService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() ->
-                        new RuntimeException("Curso no encontrado")
+                        new ResourceNotFoundException("Curso no encontrado")
                 );
 
         enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
@@ -66,7 +67,7 @@ public class EnrollmentService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
 
         return enrollmentRepository.findByUserId(user.getId())
@@ -80,7 +81,7 @@ public class EnrollmentService {
 
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Inscripción no encontrada")
+                        new ResourceNotFoundException("Inscripción no encontrada")
                 );
 
         enrollmentRepository.delete(enrollment);

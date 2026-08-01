@@ -6,8 +6,9 @@ import com.elearning.platform.dto.response.ModuleDetailResponse;
 import com.elearning.platform.dto.response.ModuleResponse;
 import com.elearning.platform.entity.Course;
 import com.elearning.platform.entity.Module;
-import com.elearning.platform.mapper.ModuleMapper;
 import com.elearning.platform.entity.User;
+import com.elearning.platform.exception.ResourceNotFoundException;
+import com.elearning.platform.mapper.ModuleMapper;
 import com.elearning.platform.repository.CourseRepository;
 import com.elearning.platform.repository.ModuleRepository;
 import com.elearning.platform.repository.UserRepository;
@@ -35,7 +36,7 @@ public class ModuleService {
 
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() ->
-                        new RuntimeException("Curso no encontrado")
+                        new ResourceNotFoundException("Curso no encontrado")
                 );
 
         Module module = Module.builder()
@@ -69,7 +70,7 @@ public class ModuleService {
 
         Module module = moduleRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Módulo no encontrado")
+                        new ResourceNotFoundException("Módulo no encontrado")
                 );
 
         return moduleMapper.toDetailResponse(
@@ -86,7 +87,7 @@ public class ModuleService {
 
         Module module = moduleRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Módulo no encontrado")
+                        new ResourceNotFoundException("Módulo no encontrado")
                 );
 
         module.setTitle(request.getTitle());
@@ -106,7 +107,7 @@ public class ModuleService {
 
         Module module = moduleRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Módulo no encontrado")
+                        new ResourceNotFoundException("Módulo no encontrado")
                 );
 
         moduleRepository.delete(module);
@@ -122,7 +123,7 @@ public class ModuleService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
     }
 

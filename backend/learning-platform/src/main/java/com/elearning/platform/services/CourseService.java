@@ -8,6 +8,7 @@ import com.elearning.platform.entity.Course;
 import com.elearning.platform.entity.User;
 import com.elearning.platform.entity.VarkResult;
 import com.elearning.platform.enums.LearningStyle;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.mapper.CourseMapper;
 import com.elearning.platform.repository.CourseRepository;
 import com.elearning.platform.repository.UserRepository;
@@ -76,7 +77,7 @@ public class CourseService {
 
         Course course = courseRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Curso no encontrado")
+                        new ResourceNotFoundException("Curso no encontrado")
                 );
 
         return courseMapper.toDetailResponse(
@@ -93,7 +94,7 @@ public class CourseService {
 
         Course course = courseRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Curso no encontrado")
+                        new ResourceNotFoundException("Curso no encontrado")
                 );
 
         course.setTitle(request.getTitle());
@@ -115,7 +116,7 @@ public class CourseService {
 
         Course course = courseRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Curso no encontrado")
+                        new ResourceNotFoundException("Curso no encontrado")
                 );
 
         courseRepository.delete(course);
@@ -131,7 +132,7 @@ public class CourseService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
     }
 

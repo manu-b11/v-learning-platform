@@ -8,6 +8,7 @@ import com.elearning.platform.entity.Badge;
 import com.elearning.platform.entity.User;
 import com.elearning.platform.entity.UserBadge;
 import com.elearning.platform.entity.UserPoint;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.mapper.BadgeMapper;
 import com.elearning.platform.mapper.UserBadgeMapper;
 import com.elearning.platform.repository.BadgeRepository;
@@ -157,7 +158,7 @@ public class BadgeService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
     }
 

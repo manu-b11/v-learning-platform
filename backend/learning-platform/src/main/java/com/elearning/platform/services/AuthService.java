@@ -6,6 +6,7 @@ import com.elearning.platform.dto.response.AuthResponse;
 import com.elearning.platform.entity.Role;
 import com.elearning.platform.entity.User;
 import com.elearning.platform.enums.RoleName;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.repository.RoleRepository;
 import com.elearning.platform.repository.UserRepository;
 import com.elearning.platform.security.CustomUserDetailsService;
@@ -36,7 +37,7 @@ public class AuthService {
         }
 
         Role role = roleRepository.findByName(RoleName.STUDENT)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado"));
 
         User user = User.builder()
                 .firstName(request.getFirstName())

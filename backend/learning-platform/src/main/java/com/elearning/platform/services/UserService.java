@@ -3,6 +3,7 @@ package com.elearning.platform.services;
 import com.elearning.platform.dto.request.UpdateUserRequest;
 import com.elearning.platform.dto.response.UserProfileResponse;
 import com.elearning.platform.entity.User;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -25,7 +26,7 @@ public class UserService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
 
         // Construir respuesta
@@ -49,7 +50,7 @@ public class UserService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado")
+                        new ResourceNotFoundException("Usuario no encontrado")
                 );
 
         // Validar correo

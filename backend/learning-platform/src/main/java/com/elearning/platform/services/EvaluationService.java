@@ -5,6 +5,7 @@ import com.elearning.platform.dto.request.UpdateEvaluationRequest;
 import com.elearning.platform.dto.response.EvaluationResponse;
 import com.elearning.platform.entity.Evaluation;
 import com.elearning.platform.entity.Module;
+import com.elearning.platform.exception.ResourceNotFoundException;
 import com.elearning.platform.repository.EvaluationRepository;
 import com.elearning.platform.repository.ModuleRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class EvaluationService {
 
         Module module = moduleRepository.findById(moduleId)
                 .orElseThrow(() ->
-                        new RuntimeException("Módulo no encontrado")
+                        new ResourceNotFoundException("Módulo no encontrado")
                 );
 
         Evaluation evaluation = Evaluation.builder()
