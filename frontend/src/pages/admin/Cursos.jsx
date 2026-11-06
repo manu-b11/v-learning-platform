@@ -34,6 +34,7 @@ export default function AdminCursos() {
                 <Button icono={UserPlus} disabled={c.estado !== "PUBLICADO"} motivo={c.estado !== "PUBLICADO" ? "Solo se inscribe en cursos publicados." : undefined}
                   onClick={() => setCurso(c)}>Inscribir estudiantes<span className="sr-only"> en {c.titulo}</span></Button>
                 <Button variante="secondary" to={`/comunidad/${c.id}`}>Comunidad<span className="sr-only"> de {c.titulo}</span></Button>
+                <Button variante="secondary" to={`/cursos/${c.id}/notas`}>Notas<span className="sr-only"> de {c.titulo}</span></Button>
               </div>
             </Card>
           ))}

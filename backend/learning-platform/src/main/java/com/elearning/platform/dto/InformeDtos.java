@@ -13,7 +13,8 @@ public final class InformeDtos {
     private InformeDtos() {}
 
     public record InformeRequest(@NotNull(message = "Elige el formato del informe.") FormatoInforme formato,
-                                 Long estudianteId, Long cursoId, LocalDate desde, LocalDate hasta) {}
+                                 Long estudianteId, Long cursoId, LocalDate desde, LocalDate hasta,
+                                 com.elearning.platform.enums.NivelProgreso nivelProgreso) {}
 
     public record VistaInforme(String titulo, List<String> contexto, List<String> columnas, List<List<String>> filas,
                                List<String> notas, boolean sinDatos, String mensaje) {}

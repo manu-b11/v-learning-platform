@@ -18,6 +18,8 @@ public interface IntentoEvaluacionRepository extends JpaRepository<IntentoEvalua
 
     long countByEvaluacionId(Long evaluacionId);
 
+    boolean existsByEvaluacionIdAndEstudianteIdAndEstado(Long evaluacionId, Long estudianteId, EstadoIntento estado);
+
     /** Mejor puntaje de intentos finalizados anteriores (excluye el indicado). null si no hay. */
     @Query("select max(i.puntaje) from IntentoEvaluacion i where i.evaluacion.id = :evaluacionId "
             + "and i.estudiante.id = :estudianteId and i.id <> :excluirId "

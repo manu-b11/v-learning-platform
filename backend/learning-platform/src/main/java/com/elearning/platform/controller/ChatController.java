@@ -1,6 +1,8 @@
 package com.elearning.platform.controller;
 
 import com.elearning.platform.dto.AuthDtos.MensajeRespuesta;
+import com.elearning.platform.dto.ChatDtos.ComunidadConfig;
+import com.elearning.platform.dto.ChatDtos.ComunidadConfigRequest;
 import com.elearning.platform.dto.ChatDtos.MensajeDto;
 import com.elearning.platform.dto.ChatDtos.MensajeReportado;
 import com.elearning.platform.dto.ChatDtos.MensajeRequest;
@@ -34,7 +36,21 @@ public class ChatController {
     @ResponseStatus(HttpStatus.CREATED)
     public MensajeDto enviar(@AuthenticationPrincipal UsuarioPrincipal u, @PathVariable Long id,
                              @Valid @RequestBody MensajeRequest req, HttpServletRequest http) {
-        return chat.enviar(u, id, req.contenido(), IpUtil.de(http));
+        return chat.enviar(u, id, req.contenido(), req.idCliente(), IpUtil.de(http));
+    }
+
+    /** RF-010: configuración de la comunidad (cola de reenvío). La consulta cualquier miembro del curso. */
+    @GetMapping("/cursos/{id}/comunidad/configuracion")
+    public ComunidadConfig configuracion(@AuthenticationPrincipal UsuarioPrincipal u, @PathVariable Long id) {
+        return chat.configuracion(u, id);
+    }
+
+    /** RF-010: el instructor del curso (o un administrador) activa o desactiva la cola de reenvío. */
+    @PutMapping("/cursos/{id}/comunidad/configuracion")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMINISTRADOR')")
+    public ComunidadConfig cambiarConfiguracion(@AuthenticationPrincipal UsuarioPrincipal u, @PathVariable Long id,
+                                                @Valid @RequestBody ComunidadConfigRequest req, HttpServletRequest http) {
+        return chat.cambiarColaReenvio(u, id, req.colaReenvio(), IpUtil.de(http));
     }
 
     @PostMapping("/mensajes/{id}/reportar")

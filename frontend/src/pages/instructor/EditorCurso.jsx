@@ -230,6 +230,7 @@ export default function EditorCurso() {
             <Badge tono={tonoEstadoCurso(curso.estado)}>{ESTADO_CURSO_TEXTO[curso.estado]}</Badge>
             {curso.estado !== "PUBLICADO" && <Button icono={Globe} onClick={() => setConfirmar("publicar")}>Publicar curso</Button>}
             {curso.estado !== "ARCHIVADO" && <Button variante="secondary" icono={Archive} onClick={() => setConfirmar("archivar")}>Archivar</Button>}
+            <Button variante="secondary" to={`/cursos/${curso.id}/notas`}>Notas del curso</Button>
             <Button variante="secondary" to={`/comunidad/${curso.id}`}>Comunidad</Button>
           </>
         )} />

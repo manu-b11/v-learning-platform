@@ -140,7 +140,10 @@ export const api = {
   },
   chat: {
     historial: (cursoId, limite = 50) => d(client.get(`/cursos/${cursoId}/mensajes`, { params: { limite } })),
-    enviar: (cursoId, contenido) => d(client.post(`/cursos/${cursoId}/mensajes`, { contenido })),
+    enviar: (cursoId, contenido, idCliente) => d(client.post(`/cursos/${cursoId}/mensajes`, { contenido, idCliente })),
+    configuracion: (cursoId) => d(client.get(`/cursos/${cursoId}/comunidad/configuracion`)),
+    cambiarConfiguracion: (cursoId, colaReenvio) =>
+      d(client.put(`/cursos/${cursoId}/comunidad/configuracion`, { colaReenvio })),
     reportar: (id) => d(client.post(`/mensajes/${id}/reportar`)),
     ocultar: (id) => d(client.post(`/mensajes/${id}/ocultar`)),
     mantener: (id) => d(client.post(`/mensajes/${id}/mantener`)),
@@ -197,6 +200,9 @@ export const api = {
     borrar: (id) => d(client.delete(`/tareas/${id}`)),
     entregas: (id) => d(client.get(`/tareas/${id}/entregas`)),
     calificar: (entregaId, datos) => d(client.put(`/entregas/${entregaId}/calificacion`, datos)),
+  },
+  notas: {
+    delCurso: (cursoId) => d(client.get(`/cursos/${cursoId}/notas`)),
   },
   informes: {
     vista: (filtros) => d(client.post("/informes/vista", filtros)),

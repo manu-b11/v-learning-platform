@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Archive, BookOpen, CircleCheck, Pencil, Plus, Send } from "lucide-react";
+import { Archive, BookOpen, CircleCheck, GraduationCap, Pencil, Plus, Send } from "lucide-react";
 import { api, detallesError, mensajeError } from "../../api/client.js";
 import { useNotif } from "../../context/NotifContext.jsx";
 import { useAsync } from "../../utils/useAsync.js";
@@ -105,6 +105,7 @@ export default function Cursos() {
                 {errores[c.id] && <Banner tono="err">{errores[c.id]}</Banner>}
                 <div className="mt-auto flex flex-wrap items-start gap-3">
                   <Button to={`/cursos/${c.id}/editar`} icono={Pencil}>Editar</Button>
+                  <Button variante="secondary" to={`/cursos/${c.id}/notas`} icono={GraduationCap}>Notas<span className="sr-only"> de {c.titulo}</span></Button>
                   <Button variante="secondary" icono={Send} onClick={() => accion(c, "publicar")} cargando={ocupado === `publicar-${c.id}`}
                     disabled={c.estado === "PUBLICADO"} motivo={c.estado === "PUBLICADO" ? "Este curso ya está publicado." : undefined}>Publicar curso</Button>
                   <Button variante="ghost" icono={Archive} onClick={() => accion(c, "archivar")} cargando={ocupado === `archivar-${c.id}`}

@@ -9,7 +9,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/** Solo inserción (RF-014): Hibernate nunca emite UPDATE y la base rechaza UPDATE/DELETE/TRUNCATE por trigger. */
 @Entity
+@org.hibernate.annotations.Immutable
 @Table(name = "registros_auditoria")
 @Getter
 @Setter

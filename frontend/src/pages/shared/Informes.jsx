@@ -5,6 +5,15 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useNotif } from "../../context/NotifContext.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { fmtFecha } from "../../utils/format.js";
+
+/** RF-012: filtro por nivel de progreso (igual que NivelProgreso en el backend). */
+const NIVELES_PROGRESO = [
+  { valor: "SIN_INICIAR", texto: "Sin iniciar (0 %)" },
+  { valor: "BAJO", texto: "Bajo (1 % a 39 %)" },
+  { valor: "MEDIO", texto: "Medio (40 % a 79 %)" },
+  { valor: "ALTO", texto: "Alto (80 % a 99 %)" },
+  { valor: "COMPLETADO", texto: "Completado (100 %)" },
+];
 import { Banner, Button, Card, Cargando, PageHeader, SelectField, TextField, Vacio } from "../../components/ui/index.jsx";
 
 /** Barras horizontales accesibles: cada barra con su valor visible; la tabla es el equivalente textual. */
@@ -35,14 +44,14 @@ export default function Informes() {
   const { avisar } = useNotif();
   const cursos = useAsync(() => (usuario.rol === "ADMINISTRADOR" ? api.admin.cursos() : api.instructor.cursos()), [usuario.rol]);
   const historial = useAsync(() => api.informes.historial(), []);
-  const [f, setF] = useState({ cursoId: "", estudianteId: "", desde: "", hasta: "" });
+  const [f, setF] = useState({ cursoId: "", estudianteId: "", desde: "", hasta: "", nivelProgreso: "" });
   const [vista, setVista] = useState(null);
   const [error, setError] = useState(null);
   const [trabajando, setTrabajando] = useState(null);
 
   const filtros = (formato) => ({
     formato, cursoId: f.cursoId ? Number(f.cursoId) : null, estudianteId: f.estudianteId ? Number(f.estudianteId) : null,
-    desde: f.desde || null, hasta: f.hasta || null });
+    desde: f.desde || null, hasta: f.hasta || null, nivelProgreso: f.nivelProgreso || null });
   const fechasMal = f.desde && f.hasta && f.desde > f.hasta;
 
   const ver = async () => {
@@ -66,6 +75,10 @@ export default function Informes() {
         {usuario.rol === "ADMINISTRADOR" && <TextField label="ID de estudiante (opcional)" type="number" min={1} value={f.estudianteId} onChange={(e) => setF({ ...f, estudianteId: e.target.value })} />}
         <TextField label="Desde" type="date" value={f.desde} onChange={(e) => setF({ ...f, desde: e.target.value })} />
         <TextField label="Hasta" type="date" value={f.hasta} onChange={(e) => setF({ ...f, hasta: e.target.value })} error={fechasMal ? "La fecha final es anterior a la inicial." : undefined} />
+        <SelectField label="Nivel de progreso" value={f.nivelProgreso} onChange={(e) => setF({ ...f, nivelProgreso: e.target.value })}>
+          <option value="">Todos</option>
+          {NIVELES_PROGRESO.map((n) => <option key={n.valor} value={n.valor}>{n.texto}</option>)}
+        </SelectField>
         <div className="flex flex-wrap gap-3 md:col-span-2 xl:col-span-4">
           <Button type="submit" icono={Eye} cargando={trabajando === "vista"} disabled={Boolean(fechasMal)}>Vista previa</Button>
           <Button variante="secondary" icono={Download} cargando={trabajando === "PDF"} disabled={Boolean(fechasMal)} onClick={() => bajar("PDF")}>Descargar PDF</Button>

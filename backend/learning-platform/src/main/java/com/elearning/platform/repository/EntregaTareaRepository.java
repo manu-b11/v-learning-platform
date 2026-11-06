@@ -24,5 +24,10 @@ public interface EntregaTareaRepository extends JpaRepository<EntregaTarea, Long
 
     long countByTareaId(Long tareaId);
 
+    boolean existsByTareaIdAndEstudianteId(Long tareaId, Long estudianteId);
+
+    @Query("select e from EntregaTarea e join fetch e.estudiante join fetch e.tarea where e.tarea.id in :tareaIds")
+    List<EntregaTarea> findByTareaIdIn(@Param("tareaIds") Collection<Long> tareaIds);
+
     long countByTareaIdAndEstado(Long tareaId, EstadoEntrega estado);
 }
