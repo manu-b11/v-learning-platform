@@ -67,7 +67,7 @@ public class InformeService {
         TablaInforme t = tablaEstudiante(u.id(), u.nombre());
         if (t.sinDatos()) throw ApiException.noEncontrado("Aún no tienes cursos para exportar.");
         ArchivoGenerado archivo = renderizar(t, formato, "mi-progreso");
-        guardar(u, new InformeRequest(formato, u.id(), null, null, null));
+        guardar(u, new InformeRequest(formato, u.id(), null, null, null, null));
         auditoria.registrar(u.id(), "PROGRESO_EXPORTADO", "progreso/" + formato, ResultadoAuditoria.PERMITIDO, ip);
         return archivo;
     }
@@ -95,6 +95,7 @@ public class InformeService {
             LocalDate f = i.getFechaInscripcion().toLocalDate();
             if (req.desde() != null && f.isBefore(req.desde())) continue;
             if (req.hasta() != null && f.isAfter(req.hasta())) continue;
+            if (req.nivelProgreso() != null && NivelProgreso.de(i.getPorcentajeCompletado()) != req.nivelProgreso()) continue;
             base.add(i);
         }
         if (!admin && req.cursoId() != null && base.isEmpty()
@@ -181,6 +182,7 @@ public class InformeService {
         if (r.cursoId() != null) p.add("curso #" + r.cursoId());
         if (r.desde() != null) p.add("desde " + r.desde());
         if (r.hasta() != null) p.add("hasta " + r.hasta());
+        if (r.nivelProgreso() != null) p.add("nivel de progreso " + r.nivelProgreso().texto());
         return p.isEmpty() ? "ninguno" : String.join(", ", p);
     }
 
@@ -200,7 +202,8 @@ public class InformeService {
         try {
             i.setFiltros(mapper.writeValueAsString(Map.of("estudianteId", Objects.toString(req.estudianteId(), ""),
                     "cursoId", Objects.toString(req.cursoId(), ""), "desde", Objects.toString(req.desde(), ""),
-                    "hasta", Objects.toString(req.hasta(), ""))));
+                    "hasta", Objects.toString(req.hasta(), ""),
+                    "nivelProgreso", Objects.toString(req.nivelProgreso(), ""))));
         } catch (JsonProcessingException e) {
             i.setFiltros(describirFiltros(req));
         }

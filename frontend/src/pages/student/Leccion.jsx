@@ -6,6 +6,9 @@ import {
   Check,
   ClipboardCheck,
   ExternalLink,
+  Pause,
+  Play,
+  Rewind,
   Square,
   Volume2,
 } from "lucide-react";
@@ -17,6 +20,7 @@ import { useTutor } from "../../context/TutorContext.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { useTexto } from "../../utils/useTexto.js";
 import { FORMATO_TEXTO } from "../../utils/format.js";
+import { useLecturaVoz, VELOCIDADES_VOZ } from "../../utils/useLecturaVoz.js";
 import {
   Badge,
   Banner,
@@ -145,7 +149,6 @@ function LeccionContenido() {
   );
   const [pestana, setPestana] = useState("contenido");
   const [avance, setAvance] = useState(null);
-  const [leyendo, setLeyendo] = useState(false);
   const medio = useRef(null);
   const pendiente = useRef(0);
   const inicio = useRef(0);
@@ -189,7 +192,6 @@ function LeccionContenido() {
     };
   }, [enviarProgreso, esEstudiante]);
 
-  useEffect(() => () => window.speechSynthesis?.cancel(), []);
 
   if (cargando && !c) return <Cargando texto={t("Cargando la lección…")} />;
   if (error && !c)
@@ -215,25 +217,6 @@ function LeccionContenido() {
     cierraModulo &&
     modulos.find((m) => m.id === lista[pos].moduloId)?.evaluaciones.length > 0;
 
-  const alternarVoz = () => {
-    const s = window.speechSynthesis;
-    if (!s) {
-      avisar(t("Tu navegador no admite lectura en voz alta."), "error");
-      return;
-    }
-    if (leyendo) {
-      s.cancel();
-      setLeyendo(false);
-      return;
-    }
-    const u = new SpeechSynthesisUtterance(
-      textoLeible || c.descripcion || c.titulo,
-    );
-    u.lang = "es-CO";
-    u.onend = () => setLeyendo(false);
-    s.speak(u);
-    setLeyendo(true);
-  };
   const alActualizarTiempo = (e) => {
     const m = e.currentTarget;
     if (
@@ -274,13 +257,11 @@ function LeccionContenido() {
         subtitulo={c.descripcion}
         acciones={
           config.textoAVoz || esEstudiante ? (
-            <Button
-              variante="secondary"
-              icono={leyendo ? Square : Volume2}
-              onClick={alternarVoz}
-            >
-              {leyendo ? t("Detener lectura") : t("Leer en voz alta")}
-            </Button>
+            <ControlesVoz
+              texto={textoLeible || c.descripcion || c.titulo}
+              t={t}
+              avisar={avisar}
+            />
           ) : null
         }
       />
@@ -516,4 +497,66 @@ function LeccionContenido() {
 export default function Leccion() {
   const { id } = useParams();
   return <LeccionContenido key={id} />;
+}
+
+/** RF-018: lectura en voz alta con pausar/reanudar, retroceder una frase, velocidad y detener. */
+function ControlesVoz({ texto, t, avisar }) {
+  const voz = useLecturaVoz(texto);
+  const activo = voz.estado !== "detenido";
+  const empezar = () => {
+    if (!voz.soportado) {
+      avisar(t("Tu navegador no admite lectura en voz alta."), "error");
+      return;
+    }
+    if (!voz.iniciar()) avisar(t("Este contenido no tiene texto para leer."), "error");
+  };
+  return (
+    <div className="flex flex-wrap items-end gap-2" role="group" aria-label={t("Lectura en voz alta")}>
+      {!activo ? (
+        <Button variante="secondary" icono={Volume2} onClick={empezar}>
+          {t("Leer en voz alta")}
+        </Button>
+      ) : (
+        <>
+          {voz.estado === "leyendo" ? (
+            <Button variante="secondary" icono={Pause} onClick={voz.pausar}>
+              {t("Pausar")}
+            </Button>
+          ) : (
+            <Button variante="secondary" icono={Play} onClick={voz.reanudar}>
+              {t("Reanudar")}
+            </Button>
+          )}
+          <Button variante="secondary" icono={Rewind} onClick={voz.retroceder}>
+            {t("Retroceder")}
+            <span className="sr-only"> {t("una frase")}</span>
+          </Button>
+          <Button variante="secondary" icono={Square} onClick={voz.detener}>
+            {t("Detener")}
+          </Button>
+        </>
+      )}
+      <label className="flex flex-col text-sm font-bold text-strong">
+        {t("Velocidad")}
+        <select
+          className="vl-input min-h-11 rounded-ctl border border-line bg-surface px-2 text-strong"
+          value={voz.velocidad}
+          onChange={(e) => voz.cambiarVelocidad(Number(e.target.value))}
+        >
+          {VELOCIDADES_VOZ.map((v) => (
+            <option key={v} value={v}>
+              {String(v).replace(".", ",")}×
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="sr-only" role="status" aria-live="polite">
+        {voz.estado === "leyendo"
+          ? `${t("Leyendo frase")} ${voz.indice + 1} ${t("de")} ${voz.total}`
+          : voz.estado === "pausado"
+            ? t("Lectura en pausa")
+            : ""}
+      </p>
+    </div>
+  );
 }

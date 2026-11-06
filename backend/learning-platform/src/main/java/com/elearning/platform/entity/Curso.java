@@ -37,6 +37,10 @@ public class Curso {
     @Column(nullable = false, length = 50)
     private EstadoCurso estado = EstadoCurso.BORRADOR;
 
+    /** RF-010: si está activo, el chat del curso encola y reenvía los mensajes que no salieron por falta de conexión. */
+    @Column(name = "cola_reenvio_chat", nullable = false)
+    private boolean colaReenvioChat = true;
+
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
 

@@ -5,7 +5,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { Check, Flag, Send, Trash2, Wifi, WifiOff } from "lucide-react";
+import { Check, Clock, Flag, Send, Trash2, Wifi, WifiOff } from "lucide-react";
 import { api, mensajeError, token } from "../../api/client.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useNotif } from "../../context/NotifContext.jsx";
@@ -22,6 +22,7 @@ import {
   Pestanas,
   SelectField,
   TextField,
+  Toggle,
   Vacio,
 } from "../../components/ui/index.jsx";
 import ConfirmarDialogo from "../../components/ConfirmarDialogo.jsx";
@@ -31,6 +32,35 @@ function cursosDelRol(rol) {
   if (rol === "ESTUDIANTE") return api.cursos.mios();
   if (rol === "INSTRUCTOR") return api.instructor.cursos();
   return api.admin.cursos();
+}
+
+/** Identificador del mensaje generado en el navegador: evita duplicados al reenviar desde la cola. */
+function nuevoIdCliente() {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+/** Error sin respuesta del servidor (sin conexión o servidor caído): el mensaje puede ir a la cola. */
+const esFallaDeRed = (err) => !err?.response;
+
+/** Cola de mensajes pendientes por usuario y curso (RF-010). Vive mientras dure la sesión del navegador. */
+function leerCola(clave) {
+  try {
+    return JSON.parse(sessionStorage.getItem(clave) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+function guardarCola(clave, cola) {
+  try {
+    if (cola.length) sessionStorage.setItem(clave, JSON.stringify(cola));
+    else sessionStorage.removeItem(clave);
+  } catch {
+    /* sin almacenamiento: la cola queda solo en memoria */
+  }
 }
 
 function Sala({ curso, onModerado }) {
@@ -46,6 +76,25 @@ function Sala({ curso, onModerado }) {
   const [aEliminar, setAEliminar] = useState(null);
   const fin = useRef(null);
   const puedeModerar = usuario.rol !== "ESTUDIANTE";
+  // RF-010: cola de reenvío. El instructor decide si está activa en su curso.
+  const claveCola = `vl.chat.cola.${usuario.id}.${curso}`;
+  const [config, setConfig] = useState({ colaReenvio: true, puedeConfigurar: false });
+  const [cola, setColaEstado] = useState(() => leerCola(claveCola));
+  const colaRef = useRef(cola);
+  const configRef = useRef(config);
+  const vaciando = useRef(false);
+  const setCola = useCallback(
+    (fn) => {
+      const nueva = typeof fn === "function" ? fn(colaRef.current) : fn;
+      colaRef.current = nueva;
+      guardarCola(claveCola, nueva);
+      setColaEstado(nueva);
+    },
+    [claveCola],
+  );
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const agregar = useCallback(
     (m) => setMensajes((l) => (l.some((x) => x.id === m.id) ? l : [...l, m])),
@@ -73,6 +122,62 @@ function Sala({ curso, onModerado }) {
     };
   }, [curso]);
 
+  useEffect(() => {
+    let activo = true;
+    api.chat
+      .configuracion(curso)
+      .then((c) => {
+        if (activo) setConfig(c);
+      })
+      .catch(() => {
+        /* si falla se usa la configuración por defecto (cola activa) */
+      });
+    return () => {
+      activo = false;
+    };
+  }, [curso]);
+
+  /** Envía en orden los mensajes en cola. Se detiene en la primera falla de red. */
+  const vaciarCola = useCallback(
+    async (forzar = false) => {
+      if (vaciando.current || colaRef.current.length === 0) return;
+      if (!forzar && !configRef.current.colaReenvio) return;
+      vaciando.current = true;
+      try {
+        while (colaRef.current.length > 0) {
+          const item = colaRef.current[0];
+          try {
+            agregar(await api.chat.enviar(curso, item.contenido, item.idCliente));
+            setCola((l) => l.filter((x) => x.idCliente !== item.idCliente));
+          } catch (err) {
+            if (esFallaDeRed(err)) break;
+            // El servidor lo rechazó (p. ej. contenido no permitido): sale de la cola y se avisa.
+            setCola((l) => l.filter((x) => x.idCliente !== item.idCliente));
+            avisar(`No se envió «${item.contenido.slice(0, 40)}»: ${mensajeError(err)}`, "error");
+          }
+        }
+        if (colaRef.current.length === 0) setAviso("Se enviaron los mensajes que estaban en cola.");
+      } finally {
+        vaciando.current = false;
+      }
+    },
+    [curso, agregar, setCola, avisar],
+  );
+
+  // Reintenta la cola al volver la conexión del navegador y cada 15 s mientras haya pendientes.
+  useEffect(() => {
+    const alVolver = () => vaciarCola();
+    window.addEventListener("online", alVolver);
+    const intervalo = setInterval(() => {
+      if (colaRef.current.length) vaciarCola();
+    }, 15000);
+    vaciarCola();
+    return () => {
+      window.removeEventListener("online", alVolver);
+      clearInterval(intervalo);
+    };
+  }, [vaciarCola]);
+
   // Tiempo real por WebSocket. Si no conecta, la pantalla sigue funcionando por la API normal.
   useEffect(() => {
     let ws;
@@ -83,7 +188,10 @@ function Sala({ curso, onModerado }) {
       ws = new WebSocket(
         `${proto}://${window.location.host}/ws/cursos/${curso}?token=${encodeURIComponent(token.get() ?? "")}`,
       );
-      ws.onopen = () => setConectado(true);
+      ws.onopen = () => {
+        setConectado(true);
+        vaciarCola();
+      };
       ws.onclose = () => {
         setConectado(false);
         if (!cerrado) reintento = setTimeout(conectar, 5000);
@@ -108,7 +216,7 @@ function Sala({ curso, onModerado }) {
       clearTimeout(reintento);
       ws?.close();
     };
-  }, [curso, usuario.id, agregar]);
+  }, [curso, usuario.id, agregar, vaciarCola]);
 
   useEffect(() => {
     fin.current?.scrollIntoView({ block: "end" });
@@ -116,16 +224,39 @@ function Sala({ curso, onModerado }) {
 
   const enviar = async (e) => {
     e.preventDefault();
-    if (!texto.trim()) return;
+    const contenido = texto.trim();
+    if (!contenido) return;
     setEnviando(true);
     setAviso(null);
+    const idCliente = nuevoIdCliente();
     try {
-      agregar(await api.chat.enviar(curso, texto.trim()));
+      agregar(await api.chat.enviar(curso, contenido, idCliente));
       setTexto("");
     } catch (err) {
-      setAviso(mensajeError(err));
+      if (esFallaDeRed(err) && config.colaReenvio) {
+        setCola((l) => [...l, { idCliente, contenido, fecha: new Date().toISOString() }]);
+        setTexto("");
+        setAviso("Sin conexión: tu mensaje quedó en cola y se enviará solo cuando vuelva la conexión.");
+      } else if (esFallaDeRed(err)) {
+        setAviso("Sin conexión: el mensaje no se envió. Tu texto sigue en el campo para que lo envíes de nuevo.");
+      } else {
+        setAviso(mensajeError(err));
+      }
     } finally {
       setEnviando(false);
+    }
+  };
+  const cambiarCola = async (activa) => {
+    try {
+      setConfig(await api.chat.cambiarConfiguracion(curso, activa));
+      avisar(
+        activa
+          ? "Cola de reenvío activada: los mensajes sin conexión se enviarán al reconectar."
+          : "Cola de reenvío desactivada: si falla la conexión, el mensaje no se envía y queda en el campo.",
+        "ok",
+      );
+    } catch (err) {
+      avisar(mensajeError(err), "error");
     }
   };
   // Reportar NO borra el mensaje: queda «en revisión» hasta que el instructor decida.
@@ -261,12 +392,62 @@ function Sala({ curso, onModerado }) {
             );
           })}
         </ul>
+        {cola.length > 0 && (
+          <ul className="mt-3 grid gap-3" aria-label="Mensajes en cola">
+            {cola.map((m) => (
+              <li
+                key={m.idCliente}
+                className="list-none rounded-opt border border-dashed border-primary-300 bg-primary-100 p-3"
+              >
+                <p className="flex flex-wrap items-center gap-2 text-sm">
+                  <strong className="text-strong">Tú</strong>
+                  <Badge tono="warn" icono={Clock}>
+                    {config.colaReenvio
+                      ? "En cola · se enviará al reconectar"
+                      : "No enviado"}
+                  </Badge>
+                </p>
+                <p className="whitespace-pre-wrap break-words text-strong">
+                  {m.contenido}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  <Button
+                    variante="ghost"
+                    icono={Send}
+                    onClick={() => vaciarCola(true)}
+                  >
+                    Enviar ahora
+                  </Button>
+                  <Button
+                    variante="ghost"
+                    icono={Trash2}
+                    onClick={() =>
+                      setCola((l) =>
+                        l.filter((x) => x.idCliente !== m.idCliente),
+                      )
+                    }
+                  >
+                    Descartar
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
         <div ref={fin} />
       </div>
       {aviso && (
         <Banner tono="info" rol="status">
           {aviso}
         </Banner>
+      )}
+      {config.puedeConfigurar && (
+        <Toggle
+          checked={config.colaReenvio}
+          onChange={cambiarCola}
+          label="Cola de reenvío de mensajes"
+          descripcion="Si alguien pierde la conexión, su mensaje queda en cola y se envía solo al reconectar. Desactívala si prefieres que el mensaje no se envíe."
+        />
       )}
       <form
         onSubmit={enviar}

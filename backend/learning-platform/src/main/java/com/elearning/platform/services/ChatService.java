@@ -1,6 +1,7 @@
 package com.elearning.platform.services;
 
 import com.elearning.platform.config.VlearningProperties;
+import com.elearning.platform.dto.ChatDtos.ComunidadConfig;
 import com.elearning.platform.dto.ChatDtos.MensajeDto;
 import com.elearning.platform.dto.ChatDtos.MensajeReportado;
 import com.elearning.platform.entity.Curso;
@@ -27,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * RF-010 Comunidad del curso: solo miembros (estudiantes inscritos, su instructor, administradores).
@@ -76,8 +79,52 @@ public class ChatService {
         return lista.stream().map(ChatService::aDto).toList();
     }
 
+    /**
+     * Mensajes recientes por (usuario, idCliente): si la cola del navegador reenvía un mensaje que el servidor
+     * ya había guardado (se perdió solo la respuesta), se devuelve el mismo en lugar de duplicarlo.
+     */
+    private static final int MAX_RECIENTES = 5000;
+    private final Map<String, MensajeDto> recientesPorCliente = Collections.synchronizedMap(
+            new LinkedHashMap<>(256, 0.75f, false) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, MensajeDto> eldest) {
+                    return size() > MAX_RECIENTES;
+                }
+            });
+
+    /** RF-010: configuración de la comunidad visible para cualquier miembro del curso. */
+    @Transactional(readOnly = true)
+    public ComunidadConfig configuracion(UsuarioPrincipal u, Long cursoId) {
+        Curso curso = exigirMiembro(cursoId, u.id(), u.rol());
+        return new ComunidadConfig(cursoId, curso.isColaReenvioChat(), u.rol() != RolUsuario.ESTUDIANTE);
+    }
+
+    /** RF-010: el instructor del curso (o un administrador) activa o desactiva la cola de reenvío. */
+    @Transactional
+    public ComunidadConfig cambiarColaReenvio(UsuarioPrincipal u, Long cursoId, boolean activa, String ip) {
+        if (u.rol() == RolUsuario.ESTUDIANTE) {
+            throw ApiException.prohibido("ACCESO_DENEGADO", "Solo el instructor del curso puede cambiar esta opción.");
+        }
+        Curso curso = exigirMiembro(cursoId, u.id(), u.rol());
+        curso.setColaReenvioChat(activa);
+        cursos.save(curso);
+        auditoria.registrar(u.id(), activa ? "CHAT_COLA_ACTIVADA" : "CHAT_COLA_DESACTIVADA", "cursos/" + cursoId,
+                ResultadoAuditoria.PERMITIDO, ip);
+        return new ComunidadConfig(cursoId, activa, true);
+    }
+
     @Transactional
     public MensajeDto enviar(UsuarioPrincipal u, Long cursoId, String contenido, String ip) {
+        return enviar(u, cursoId, contenido, null, ip);
+    }
+
+    @Transactional
+    public MensajeDto enviar(UsuarioPrincipal u, Long cursoId, String contenido, String idCliente, String ip) {
+        String clave = (idCliente == null || idCliente.isBlank()) ? null : u.id() + ":" + idCliente.trim();
+        if (clave != null) {
+            MensajeDto previo = recientesPorCliente.get(clave);
+            if (previo != null && previo.cursoId().equals(cursoId)) return previo;
+        }
         Curso curso = exigirMiembro(cursoId, u.id(), u.rol());
         String texto = contenido == null ? "" : contenido.trim();
         validar(texto);
@@ -89,6 +136,7 @@ public class ChatService {
         m = mensajes.save(m);
         MensajeDto dto = new MensajeDto(m.getId(), cursoId, u.id(), u.nombre(), u.rol(), texto, m.getFechaEnvio(), m.getEstado());
         eventos.publishEvent(new MensajeChatEvent(cursoId, dto));
+        if (clave != null) recientesPorCliente.put(clave, dto);
         return dto;
     }
 

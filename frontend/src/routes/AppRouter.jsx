@@ -31,6 +31,7 @@ const Informes = lazy(() => import("../pages/shared/Informes.jsx"));
 const InicioInstructor = lazy(() => import("../pages/instructor/Inicio.jsx"));
 const CursosInstructor = lazy(() => import("../pages/instructor/Cursos.jsx"));
 const EditorCurso = lazy(() => import("../pages/instructor/EditorCurso.jsx"));
+const NotasCurso = lazy(() => import("../pages/instructor/NotasCurso.jsx"));
 
 const InicioAdmin = lazy(() => import("../pages/admin/Inicio.jsx"));
 const Usuarios = lazy(() => import("../pages/admin/Usuarios.jsx"));
@@ -131,6 +132,7 @@ export default function AppRouter() {
 
               <Route element={<SoloRol roles={["INSTRUCTOR", "ADMINISTRADOR"]} />}>
                 <Route path="/informes" element={<Informes />} />
+                <Route path="/cursos/:id/notas" element={<NotasCurso />} />
               </Route>
 
               <Route element={<SoloRol roles={["ADMINISTRADOR"]} />}>

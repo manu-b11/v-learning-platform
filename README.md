@@ -88,7 +88,7 @@ flowchart LR
 | Seguridad | JWT (jjwt 0.12.7), BCrypt, OTP de 6 dígitos, RBAC con `@PreAuthorize` |
 | Documentos | Apache POI (Excel), OpenPDF 1.3.x (PDF) |
 | API docs | springdoc-openapi 2.8.9 (Swagger UI) |
-| Base de datos | PostgreSQL 14 o superior, driver `org.postgresql`; el esquema lo crea `database/postgresql/01_schema.sql` (Hibernate con `ddl-auto=none`) |
+| Base de datos | PostgreSQL 14 o superior, driver `org.postgresql`; el esquema lo crea `database/vlearning_postgresql.sql` (Hibernate con `ddl-auto=none`) |
 | Frontend | React 19, Vite 8, Tailwind 4 (`@tailwindcss/vite`), react-router-dom 7, axios, lucide-react |
 | Fuentes | Atkinson Hyperlegible Next (por defecto), Lexend (modo dislexia), sistema |
 | IA | Ollama local (`gemma2:2b`; alternativas `qwen2.5:1.5b`, `llama3.2:1b`), solo texto |
@@ -102,10 +102,10 @@ v-learning-platform/
 ├─ README.md
 ├─ package.json
 ├─ database/
-│  ├─ postgresql/
-│  │  ├─ 00_crear_bd.sql             Crea el rol vlearning_admin y la base vlearning
-│  │  └─ 01_schema.sql               Esquema PostgreSQL (ampliaciones marcadas [EXT])
-│  └─ sqlserver_anterior.sql         Esquema T-SQL anterior (solo referencia)
+│  ├─ vlearning_postgresql.sql      Esquema PostgreSQL completo (ampliaciones marcadas [EXT])
+│  ├─ migracion_doble_factor.sql    Migración: segundo factor opcional para estudiantes
+│  └─ migracion_auditoria_inmutable_y_cola_chat.sql
+│                                   Migración: auditoría de solo inserción y cola de reenvío del chat
 ├─ docs/
 │  └─ img/                           Imágenes del README (sección 12)
 ├─ backend/learning-platform/        Monolito Spring Boot
@@ -149,15 +149,20 @@ v-learning-platform/
 
 1. Crea el rol y la base (como superusuario, una sola vez):
    ```bash
-   psql -U postgres -v admin_password="<contraseña-segura>" -f database/postgresql/00_crear_bd.sql
+   psql -U postgres -c "CREATE ROLE vlearning_admin LOGIN PASSWORD '<contraseña-segura>';"
+   psql -U postgres -c "CREATE DATABASE vlearning OWNER vlearning_admin;"
    ```
    El rol `vlearning_admin` es dueño de la base, no superusuario. Ninguna contraseña queda en el repositorio.
-2. Crea las tablas (**borra y recrea** las tablas de `vlearning`):
+2. Crea las tablas en una base vacía:
    ```bash
-   psql -U vlearning_admin -d vlearning -f database/postgresql/01_schema.sql
+   psql -U vlearning_admin -d vlearning -f database/vlearning_postgresql.sql
    ```
-3. Opcional: crea un rol de aplicación sin permiso de modificar la auditoría (bloque comentado al final del script).
-4. **Datos del SQL Server anterior:** no se migran automáticamente. El esquema anterior se conserva en `database/sqlserver_anterior.sql`; si necesitas los datos, usa `pgloader` o exporta e importa por CSV.
+3. **Base ya creada con una versión anterior:** aplica las migraciones (son idempotentes):
+   ```bash
+   psql -U vlearning_admin -d vlearning -f database/migracion_doble_factor.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_auditoria_inmutable_y_cola_chat.sql
+   ```
+4. La tabla `registros_auditoria` es de **solo inserción**: los triggers `trg_registros_auditoria_inmutable` y `trg_registros_auditoria_sin_truncate` rechazan `UPDATE`, `DELETE` y `TRUNCATE` para cualquier rol, incluido el dueño. Opcional: un rol de aplicación sin privilegios de dueño (bloque comentado al final del script).
 
 ### 6.2 Backend
 
@@ -217,7 +222,7 @@ Si Ollama no está disponible, el resto de la plataforma funciona y el Tutor res
 
 ### 6.5 Modo desarrollo sin correo
 
-`vlearning.dev.exponer-secretos=true` (valor por defecto en desarrollo) devuelve en la respuesta de la API el **OTP**, la **contraseña temporal** y el **enlace de recuperación**, para probar sin servidor de correo. Los **estudiantes inician sesión directamente con correo y contraseña, sin OTP**; el personal (**administrador o instructor**) sí recibe y confirma un código, que solo se expone en la respuesta en modo desarrollo. Si no configuras SMTP (`SPRING_MAIL_*`), el `MailService` no envía correos: la contraseña temporal solo se devuelve en la API si la entrega por correo falló o si este modo está activo. **Apágalo en cualquier entorno real.**
+`vlearning.dev.exponer-secretos=true` (valor por defecto en desarrollo) devuelve en la respuesta de la API el **OTP**, la **contraseña temporal** y el **enlace de recuperación**, para probar sin servidor de correo. El **segundo factor (OTP) es obligatorio para administradores e instructores**; para los **estudiantes viene activado por defecto y pueden desactivarlo** desde *Configuración* (confirmando su contraseña). El código, que solo se expone en la respuesta en modo desarrollo. Si no configuras SMTP (`SPRING_MAIL_*`), el `MailService` no envía correos: la contraseña temporal solo se devuelve en la API si la entrega por correo falló o si este modo está activo. **Apágalo en cualquier entorno real.**
 
 ---
 
@@ -298,7 +303,7 @@ flowchart TD
 | RF | Actores | Flujo base y ramas | Cómo lo cumple la plataforma |
 |---|---|---|---|
 | **001** Registrar cuenta | Administrador, Sistema | Acceder a gestión de usuarios y elegir «Nuevo usuario» → ingresar nombre, correo, programa y rol → validar correo único y dominio institucional → generar contraseña temporal con hash → enviar credenciales por canal cifrado → registrar evento en auditoría. ⤷ correo duplicado: notificar y cancelar (paso 3). ⤷ falla el envío: reintentar y avisar al administrador para entrega manual segura (paso 5). | `POST /admin/usuarios`. Pantalla *Usuarios → Nuevo usuario*. Si el correo falla, 3 reintentos y un aviso al administrador con la contraseña temporal para entrega manual. |
-| **002** Autenticar | Usuario, Sistema | Ingresar correo y contraseña → verificar contra el hash → si es personal, solicitar OTP → ingresar el código → validar y generar JWT con el rol → redirigir al dashboard y auditar. Los estudiantes reciben el JWT directamente, sin OTP. ⤷ intento fallido: registrar y mostrar error genérico (paso 2). ⤷ 5 fallos en 15 min: bloquear temporalmente y avisar por correo (paso 2). | Login en una pantalla para estudiantes y en dos pantallas para el personal (credenciales, luego OTP). Redirige según rol y estado (primer acceso, VARK, accesibilidad). |
+| **002** Autenticar | Usuario, Sistema | Ingresar correo y contraseña → verificar contra el hash → solicitar OTP (obligatorio para administrador e instructor; el estudiante puede desactivarlo) → ingresar el código → validar y generar JWT con el rol → redirigir al dashboard y auditar. ⤷ intento fallido: registrar y mostrar error genérico (paso 2). ⤷ 5 fallos en 15 min: bloquear temporalmente y avisar por correo (paso 2). | Login en dos pantallas (credenciales, luego OTP); en una sola si el estudiante desactivó el segundo factor. Redirige según rol y estado (primer acceso, VARK, accesibilidad). |
 | **003** Recuperar contraseña | Usuario, Sistema | Elegir «¿Olvidaste tu contraseña?» e ingresar el correo → generar enlace de un solo uso (15 min) → enviarlo por canal cifrado → abrir el enlace e ingresar la nueva contraseña → validar robustez y guardar con hash → invalidar sesiones y auditar. ⤷ enlace vencido o usado: mostrar error y pedir otro (paso 4). ⤷ contraseña débil: rechazar y pedir otra (paso 5). | `POST /auth/recuperar` (respuesta genérica) y `POST /auth/restablecer`. |
 | **004** Identificar estilo | Usuario, Sistema | Acceder a la evaluación inicial → mostrar el cuestionario → responder las preguntas → procesar y calcular el estilo → guardar el resultado como criterio de personalización. ⤷ pedir ayuda: **mostrar explicación adicional de la pregunta** (paso 3). ⤷ abandonar: guardar progreso parcial y permitir retomar (paso 3). | 12 preguntas, una por pantalla, cada una con botón «Ayuda con esta pregunta». Guardado por respuesta. Resultado: método recomendado y segundo opcional. |
 | **005** Entregar contenido | Usuario, Sistema | Seleccionar curso o módulo → consultar el estilo del perfil → filtrar y ordenar materiales priorizando el formato afín → **visualizar el dashboard de progreso (RF-006)** → consumir el contenido → registrar avance y tiempo. ⤷ cambia manualmente el estilo: actualizar el orden (paso 2). ⤷ sin formato afín: mostrar formato por defecto y notificar al equipo de contenidos (paso 3). | Detalle de curso con módulos ordenados (principal → secundario → resto). Si no hay formato afín, texto estructurado y aviso al instructor del curso. |
@@ -306,7 +311,7 @@ flowchart TD
 | **007** Realizar evaluación | Usuario, Sistema | Acceder a la evaluación del módulo → **seleccionar el formato según el estilo** → responder → corregir y calcular puntaje → generar retroalimentación (RF-008) → almacenar resultado y actualizar rendimiento. ⤷ falla la conexión: guardar progreso y reanudar (paso 3). ⤷ solicitar repetir: nueva sesión conservando el histórico (último paso). | Si un módulo tiene varias evaluaciones, se muestran ordenadas por afinidad con el método (ver sección 11). Guardado automático por pregunta; cada repetición es un intento nuevo. |
 | **008** Retroalimentación | Usuario, Sistema | Analizar el puntaje → clasificar (excelente, aceptable, insuficiente) → generar mensaje con recomendaciones de refuerzo → visualizar retroalimentación y recursos. ⤷ sin recursos de refuerzo: mensaje genérico y aviso al equipo de contenidos (paso 3). | Rangos: ≥85 %, ≥60 %, <60 %. Recomendaciones priorizadas por el método VARK del estudiante. |
 | **009** Puntos, insignias y logros | Usuario, Sistema | Completar actividad, módulo o evaluación → calcular puntos → evaluar reglas de insignias y niveles → actualizar panel de logros y clasificación → visualizar con acceso por teclado y lector. ⤷ nueva insignia o nivel: notificar (paso 3). ⤷ **modo privado**: ocultar al usuario de la tabla pública (paso 4). | Pantalla *Logros*. Interruptor «Mostrar mi nombre en la clasificación» (Activado/Desactivado). En modo privado el estudiante ve sus propios puntos pero no figura en el ranking del curso. |
-| **010** Chat y foros | Usuario, Sistema | Acceder al chat o foro del curso → verificar permisos según el rol → redactar y enviar mensaje o publicación → entregar y mostrar en tiempo real → almacenar el historial. ⤷ alerta visual equivalente a la sonora (paso 4). ⤷ **reportar contenido inapropiado y notificar al moderador** (paso 4). | *Comunidad* por curso, solo miembros (inscritos, su instructor y administradores). Reportar marca el mensaje `REPORTADO` y avisa al instructor del curso y a los administradores. |
+| **010** Chat y foros | Usuario, Sistema | Acceder al chat o foro del curso → verificar permisos según el rol → redactar y enviar mensaje o publicación → entregar y mostrar en tiempo real → almacenar el historial. ⤷ alerta visual equivalente a la sonora (paso 4). ⤷ **reportar contenido inapropiado y notificar al moderador** (paso 4). | *Comunidad* por curso, solo miembros (inscritos, su instructor y administradores). Reportar marca el mensaje `REPORTADO` y avisa al instructor del curso, que decide si se elimina o se mantiene. **Cola de reenvío** configurable por el instructor: si se pierde la conexión, el mensaje queda en cola y se envía al reconectar (sin duplicados). |
 | **011** Notificaciones | Usuario, Sistema | Detectar fecha límite o tarea pendiente próxima → consultar el canal preferido → generar recordatorio personalizado → enviar por el canal (correo, plataforma o alerta visual) → visualizar y marcar como leída. ⤷ reintentar por canal alterno (paso 4). ⤷ **posponer el recordatorio** (paso 5). | Job diario `@Scheduled`. Campana con punto rojo y centro de notificaciones. «Posponer» oculta el aviso 1 día, 3 días o 1 semana. |
 | **012** Informes | Administrador, Sistema | Acceder al panel validando el rol → seleccionar filtros (usuario, curso, periodo) → consolidar progreso, desempeño y **uso de funciones de accesibilidad** → generar informe con tablas y gráficos → visualizar. ⤷ sin datos: mensaje (paso 3). ⤷ exportar informe PDF/Excel (paso 4). | El instructor opera el mismo flujo sobre **sus** cursos. El uso de accesibilidad se muestra **agregado** por función y categoría, sin identificar la discapacidad de cada estudiante. |
 | **013** Proteger y auditar | Usuario, Sistema | Solicitar una operación sobre datos sensibles → validar sesión y permisos (RBAC) → cifrar en tránsito (TLS) y en reposo → ejecutar la operación → registrar en el log de auditoría inmutable. ⤷ operación bloqueada: alertar al administrador (paso 2). ⤷ intento de inyección SQL o XSS: rechazar la solicitud (paso 2). | Filtro de seguridad en cada solicitud a `/api/**`. 401 y 403 con mensaje claro; los incidentes de seguridad crean una notificación para los administradores. |
@@ -314,7 +319,7 @@ flowchart TD
 | **015** Teclado y lectores (nuevo) | Usuario, Sistema | Ingresar con teclado o lector → detectar la tecnología de apoyo y el perfil → renderizar con estructura semántica y ARIA → navegar con tabulador, flechas y atajos con foco visible → anunciar cambios de estado al lector. ⤷ mostrar la lista de atajos (paso 4). ⤷ omitir bloques y saltar al contenido principal (paso 4). | Enlace «Saltar al contenido principal», diálogo de atajos (`?`) y regiones `aria-live`. La «detección» usa el perfil guardado y las preferencias del navegador; un navegador no revela si hay lector de pantalla. |
 | **016** Visualización de la interfaz | Usuario, Sistema | Abrir el panel de ajustes → elegir contraste, tamaño, tipografía y espaciado → validar contraste mínimo WCAG 2.1 AA → aplicar en tiempo real → guardar y aplicar en cada sesión. ⤷ restablecer valores por defecto (paso 2). ⤷ advertir contraste o legibilidad insuficiente y sugerir una combinación accesible (paso 3). | Controles segmentados con vista previa. Botón **Restablecer**. La validación avisa, por ejemplo, de interlineado menor a 1.35 con texto muy grande. |
 | **017** Teclado y lector (anterior) | Estudiante (antes «Colaborador»), Sistema | Navegar con teclado → resaltar el foco y anunciarlo con ARIA → ejecutar acciones con Enter o espacio → confirmar con retroalimentación visual y auditiva del lector → persistir el perfil. ⤷ componente no accesible: registrar el error y ofrecer alternativa funcional. | Se fusiona con el RF-015. El actor es el Estudiante (hereda de `Usuario`); no hay una clase «Colaborador». |
-| **018** Texto alternativo y voz | Usuario, Sistema | Asociar texto alternativo a cada imagen → activar «leer en voz alta» → convertir el texto a audio y reproducirlo → controlar la reproducción (pausar, velocidad, retroceder). ⤷ imagen sin texto alternativo: notificar al equipo y mostrar descripción genérica temporal (paso 1). | Web Speech API en el navegador. Aviso al instructor del curso cuando falta el texto alternativo. |
+| **018** Texto alternativo y voz | Usuario, Sistema | Asociar texto alternativo a cada imagen → activar «leer en voz alta» → convertir el texto a audio y reproducirlo → controlar la reproducción (pausar, velocidad, retroceder). ⤷ imagen sin texto alternativo: notificar al equipo y mostrar descripción genérica temporal (paso 1). | Web Speech API en el navegador, leída por frases: **pausar/reanudar, retroceder una frase, velocidad (0,75× a 2×) y detener**. Aviso al instructor del curso cuando falta el texto alternativo. |
 | **019** Subtítulos y transcripción | Usuario, Sistema | Generar o cargar subtítulos para cada video → generar transcripción completa → elegir ver subtitulado, leer la transcripción o el texto equivalente → presentar el formato elegido. ⤷ video sin subtítulos: **marcar como no conforme y restringir su publicación** (paso 1). | `POST /contenidos/{id}/publicar` rechaza videos sin subtítulos y transcripción, y podcasts sin transcripción. |
 | **020** Alertas visuales y LSE | Usuario, Sistema | Identificar eventos con notificación sonora → generar alerta visual equivalente (banner, ícono o vibración) → recibir y reconocer la alerta → mostrar interpretación en lengua de señas si existe. ⤷ sin LSE: informar la ausencia y priorizar subtítulos y transcripción (paso 4). | La app no emite sonidos; toda señal tiene banner emergente y región `aria-live`. La LSE se carga como recurso accesible de tipo `LENGUA_SENAS`. |
 | **021** Interacción motora | Usuario, Sistema | Ampliar botones y áreas interactivas → sustituir arrastrar y soltar por teclado o clic → otorgar tiempo adicional configurable → habilitar atajos de teclado. ⤷ actividad sin alternativa accesible: **excluirla temporalmente** de la calificación y notificar al equipo (paso 2). | Con perfil motor, las evaluaciones con `alternativa_accesible = 0` aparecen como «No calificada por ahora» y se avisa al instructor. |
@@ -376,17 +381,24 @@ flowchart TD
 | RF-009 | HU-011 | Puntos, insignias y logros | `GamificacionService` | `GET /logros`, `PUT /logros/privacidad`, `GET /cursos/{id}/ranking`, `PUT /admin/gamificacion/reglas` |
 | RF-010 | HU-012 | Chat y foros | `ChatService`, WebSocket | `WS /ws/cursos/{id}`, `GET/POST /cursos/{id}/mensajes`, `POST /mensajes/{id}/reportar` |
 | RF-011 | HU-013 | Notificaciones | `NotificacionService` (`@Scheduled`) | `GET /notificaciones`, `POST /notificaciones/{id}/posponer`, `PUT /notificaciones/preferencias` |
-| RF-012 | HU-014 | Informes | `InformeService` | `POST /informes` (PDF/Excel) |
+| RF-012 | HU-014 | Informes | `InformeService` | `POST /informes` (PDF/Excel), filtros por estudiante, curso, periodo y **nivel de progreso** |
 | RF-013 | HU-004, HU-015 | RBAC, protección y auditoría | `security/*`, `AuditoriaService` | Transversal; `POST /auth/logout`, `GET /auth/me`, `GET /admin/auditoria` |
 | RF-014 | HU-016 | Perfil de accesibilidad | `AccesibilidadService` | `GET/PUT /accesibilidad/perfil`, `PUT /accesibilidad/configuracion` |
 | RF-015 y RF-017 | HU-017 | Teclado y lectores de pantalla | Frontend (`PrefsContext`, ARIA) | — |
 | RF-016 | HU-018 | Visualización de la interfaz | `PrefsContext` + `AccesibilidadService` | `PUT /accesibilidad/configuracion`, `POST /accesibilidad/restablecer` |
-| RF-018 | HU-019 | Texto alternativo y voz | Frontend (Web Speech API) + `RecursoService` | `POST /contenidos/{id}/recursos` |
-| RF-019 | HU-020 | Subtítulos y transcripción | `PublicacionService` | `POST /contenidos/{id}/publicar` (bloquea no conformes) |
-| RF-020 | HU-021 | Alertas visuales y LSE | `NotifContext` + `RecursoService` | Banner y región `aria-live` |
+| RF-018 | HU-019 | Texto alternativo y voz | Frontend (`useLecturaVoz`, Web Speech API) + `InstructorCursoService` | `POST /contenidos/{id}/recursos` |
+| RF-019 | HU-020 | Subtítulos y transcripción | `InstructorCursoService` (`ConformidadAccesibilidad`) | `POST /contenidos/{id}/publicar` (bloquea no conformes) |
+| RF-020 | HU-021 | Alertas visuales y LSE | `NotifContext` + `InstructorCursoService` | Banner y región `aria-live` |
 | RF-021 | HU-022 | Interacción motora | Frontend + `EvaluacionService` | Tiempo adicional y exclusión en `POST /evaluaciones/{id}/intentos` |
-| RF-022 | HU-023 | Simplificación cognitiva | `ApoyoCognitivoService` | `GET /contenidos/{id}/apoyo-cognitivo` |
+| RF-022 | HU-023 | Simplificación cognitiva | `ContenidoService` (`TextoApoyo`) | `GET /contenidos/{id}/apoyo-cognitivo` |
 | RF-024 | HU-024 | Tutor de IA | `TutorService`, `OllamaClient` | `POST /tutor/consultas`, `POST /tutor/respuestas/{id}/util` |
+| RF-025 | HU-025 | Gestionar cursos y contenidos | `InstructorCursoService`, `InstructorEvaluacionService`, `PortadaService` | `/instructor/cursos`, `/modulos/{id}/contenidos`, `/modulos/{id}/evaluaciones` |
+| RF-026 | HU-026 | Inscribir estudiantes | `CursoService` | `POST /instructor/cursos/{id}/inscripciones`, `POST /admin/cursos/{id}/inscripciones`, `POST /cursos/{id}/inscribirme` |
+| RF-027 | HU-027 | Tareas calificables | `TareaService` | `/modulos/{id}/tareas`, `/tareas/{id}/entrega`, `/entregas/{id}/calificacion` |
+| RF-028 | HU-028 | Moderar la comunidad | `ChatService` | `POST /mensajes/{id}/reportar`, `/ocultar`, `/mantener`, `GET /moderacion/reportes`, `PUT /cursos/{id}/comunidad/configuracion` |
+| RF-029 | HU-029 | Notas del curso | `NotasCursoService` | `GET /cursos/{id}/notas` |
+| RF-030 | HU-030 | Administrar cuentas | `UsuarioService`, `AdminPanelService` | `PATCH /admin/usuarios/{id}/estado`, `POST /admin/usuarios/{id}/reenviar-credenciales`, `GET /admin/dashboard` |
+| RF-031 | HU-031 | Verificación en dos pasos del estudiante | `AuthService` | `PUT /auth/doble-factor` |
 
 > **Diferencia entre documentos:** la HU-024 menciona el perfil VARK como insumo del Tutor, pero el diagrama y el RF-024 lo excluyen. Se implementa el diagrama: el Tutor se adapta **solo** al perfil de accesibilidad y al desempeño.
 
@@ -452,6 +464,8 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 | GET | `/moderacion/reportes` | Mensajes reportados pendientes en los cursos del instructor |
 | POST | `/mensajes/{id}/reportar` · `/mensajes/{id}/ocultar` · `/mensajes/{id}/mantener` | Reportar (miembros) y decidir (instructor) |
 | GET/PUT | `/tareas/{id}/entregas` · `/entregas/{id}/calificacion` | Ver entregas y calificar (notifica al estudiante) |
+| GET | `/cursos/{id}/notas` | Notas del curso: nota por actividad, nota final, promedio general, quién aprueba (RF-029; también administrador) |
+| GET/PUT | `/cursos/{id}/comunidad/configuracion` | Ver y cambiar la cola de reenvío del chat del curso (RF-010; el GET lo usa cualquier miembro) |
 | POST | `/instructor/cursos/{id}/inscripciones` | Inscribe estudiantes |
 | POST/GET | `/informes` | Informes de **sus** cursos |
 
@@ -475,15 +489,15 @@ Los códigos de error siguen un formato único (`ApiException` + `GlobalExceptio
 ## 11. Decisiones de diseño
 
 - **Monolito en capas** (`config`, `controller`, `dto`, `entity`, `enums`, `exception`, `repository`, `security`, `services`, `util`). Controladores finos; la lógica vive en los servicios.
-- **Esquema fiel al oficial.** Las ampliaciones están marcadas `[EXT]` en `database/postgresql/01_schema.sql`:
+- **Esquema fiel al oficial.** Las ampliaciones están marcadas `[EXT]` en `database/vlearning_postgresql.sql`:
   - `usuarios`: `bloqueado_hasta`, `notificaciones_habilitadas`, `canal_preferido` (HU-002, HU-013).
   - `contenidos`: `url_recurso`, `cuerpo` (HU-006, HU-023).
   - `perfiles_aprendizaje`: `metodo_secundario`, distinto del principal.
   - `codigos_otp` (HU-002) y `respuestas_vark_parciales` (HU-005, guardado parcial).
-- **Autenticación en dos pasos del personal (HU-002):** OTP de 6 dígitos válido 5 min, guardado hasheado; bloqueo de 15 min tras 5 fallos en 15 min, con aviso por correo. Los estudiantes inician sesión directamente con correo y contraseña.
+- **Autenticación en dos pasos (HU-002):** OTP de 6 dígitos válido 5 min, guardado hasheado; obligatorio para administrador e instructor, activado por defecto y desactivable para el estudiante. Bloqueo de 15 min tras 5 fallos de contraseña en 15 min, con aviso por correo; 5 códigos OTP fallidos invalidan el código y obligan a iniciar sesión de nuevo.
 - **Sesiones (HU-004):** cada login crea una fila en `sesiones` con el hash SHA-256 del token; se valida firma, sesión activa, inactividad deslizante de 30 min y que el usuario siga habilitado. Cambiar o restablecer la contraseña invalida todas las sesiones.
 - **Contraseñas:** BCrypt; política de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.
-- **Auditoría solo de inserción (HU-015):** se logra con `DENY UPDATE, DELETE` al usuario de la aplicación y no con un trigger, que chocaría con la FK `ON DELETE SET NULL`. Se registra de forma síncrona en una transacción independiente (`REQUIRES_NEW`), de modo que el registro sobrevive aunque la operación se revierta.
+- **Auditoría solo de inserción (HU-015):** la entidad es `@Immutable` (Hibernate nunca emite `UPDATE`) y la base lo garantiza con triggers que rechazan `UPDATE`, `DELETE` y `TRUNCATE` para cualquier rol. La única excepción es la acción `ON DELETE SET NULL` de la FK hacia `usuarios`, que ejecuta el propio motor y solo puede poner `usuario_id` en `NULL`. Se registra de forma síncrona en una transacción independiente (`REQUIRES_NEW`), de modo que el registro sobrevive aunque la operación se revierta.
 - **Regla de avance (HU-007):** un módulo está completo cuando se completó al menos un formato publicado; el % del curso es módulos completos ÷ módulos con contenido publicado.
 - **Personalización (HU-006):** primero formatos del método principal, luego del secundario, luego el resto; si no hay formato afín, se muestra el texto estructurado por defecto y se marca el módulo.
 - **Publicación conforme (HU-020):** un video no se publica sin subtítulos y transcripción; un podcast no sin transcripción.
@@ -493,13 +507,15 @@ Los códigos de error siguen un formato único (`ApiException` + `GlobalExceptio
 - **Sin sonidos:** la app no reproduce audio de notificación; cada señal tiene alerta visual y región `aria-live`.
 - **Correo:** `MailService` envía por SMTP real si defines `SPRING_MAIL_*`; sin SMTP devuelve «no enviado» y la plataforma usa el canal alterno (notificación interna).
 - **Evaluación según el método (RF-007):** si un módulo tiene varias evaluaciones, se ordenan por afinidad: Visual → simulación, quiz; Auditivo → quiz; Lectura/escritura → quiz, práctica; Kinestésico → práctica, simulación. Con una sola evaluación, se muestra esa.
-- **Recordatorios (RF-011):** el modelo de datos no tiene fechas límite, así que el job diario (`vlearning.notificaciones.cron`, 8:00 por defecto) avisa de cursos activos sin completar y de inactividad tras 3 días; respeta las preferencias de cada estudiante y no repite el mismo aviso el mismo día (configurable con `vlearning.notificaciones.dias-inactividad`). Si falla el canal elegido, reintenta por el alterno.
+- **Recordatorios (RF-011):** el job diario (`vlearning.notificaciones.cron`, 8:00 por defecto) avisa de **evaluaciones y tareas cuya fecha límite vence en los próximos 2 días** (`vlearning.notificaciones.dias-anticipacion-fecha-limite`) y que el estudiante aún no presentó, de cursos activos sin completar y de inactividad tras 3 días; respeta las preferencias de cada estudiante y no repite el mismo aviso el mismo día (configurable con `vlearning.notificaciones.dias-inactividad`). Si falla el canal elegido, reintenta por el alterno.
 - **Privacidad del ranking (RF-009):** `perfiles_gamificacion.visible_ranking`. En modo privado se excluye de `posiciones_ranking`, pero el estudiante conserva sus puntos y su nivel.
-- **Reportes de chat (RF-010):** el mensaje pasa a `REPORTADO` y se notifica al instructor del curso y a los administradores; quién reportó queda en la auditoría.
+- **Reportes de chat (RF-010):** el mensaje pasa a `REPORTADO` y se notifica al instructor del curso, que decide si se elimina o se mantiene; quién reportó queda en la auditoría.
+- **Cola de reenvío del chat (RF-010):** opción por curso (`cursos.cola_reenvio_chat`, activa por defecto) que el instructor cambia en *Comunidad*. Activa: si el envío falla por conexión, el mensaje queda en cola en el navegador y se reenvía al reconectar (evento `online`, reconexión del WebSocket o cada 15 s); cada mensaje lleva un `idCliente` para que el servidor no lo duplique. Desactivada: el mensaje no se envía y el texto queda en el campo.
+- **Notas del curso (RF-029):** `GET /cursos/{id}/notas` (instructor del curso o administrador). Nota de evaluación = mejor intento; nota de tarea = calificación del instructor; actividad no presentada = 0 %; tarea sin calificar y evaluaciones sin alternativa accesible para perfil motor no cuentan. Nota final = promedio; aprueba con 60 % o más. Pantalla *Mis cursos → Notas*.
 - **Posponer recordatorios (RF-011):** `notificaciones.pospuesta_hasta`; mientras no llegue esa fecha no se muestra.
 - **Actividades sin alternativa accesible (RF-021):** `evaluaciones.alternativa_accesible`. Si vale 0 y el estudiante tiene perfil motor, la evaluación se excluye de la calificación y se avisa al instructor.
 - **Informes de accesibilidad (RF-012):** el uso de funciones de accesibilidad se agrega por función y categoría; no se muestra la discapacidad de cada estudiante a instructores.
-- **Cifrado (RF-013):** contraseñas, OTP y tokens con hash desde la aplicación; el resto en reposo con cifrado de disco y respaldos cifrados (PostgreSQL no tiene TDE nativo; ejemplo con `pg_dump | gpg` comentado al final de `01_schema.sql`); en tránsito, TLS. **Los PDF y Excel exportados (RF-006, RF-012) no llevan contraseña**: por decisión del equipo se entregan solo por TLS; los diagramas dicen «cifrado» y esto es una desviación consciente.
+- **Cifrado (RF-013):** contraseñas, OTP y tokens con hash desde la aplicación; el resto en reposo con cifrado de disco y respaldos cifrados (PostgreSQL no tiene TDE nativo; ejemplo con `pg_dump | gpg` comentado al final de `vlearning_postgresql.sql`); en tránsito, TLS. **Los PDF y Excel exportados (RF-006, RF-012) no se cifran**: el progreso no contiene datos sensibles y el cifrado del archivo no aporta valor práctico; se entregan por TLS.
 - **Alertas de seguridad (RF-013):** una operación bloqueada o un intento de inyección o XSS se audita como incidente y notifica a los administradores.
 
 - **Contenido único:** hay una sola entidad `Contenido` con el campo `formato` (VIDEO, PODCAST, SIMULACION, LECTURA); no hay subclases `Video`, `Podcast`, etc. como en el diagrama de clases, para mantener el esquema relacional oficial.
@@ -643,9 +659,9 @@ Alcance: se busca nivel AA. Una auditoría con usuarios reales y lectores de pan
 
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
-| `password authentication failed for user` | Usuario o contraseña incorrectos | Revisa `DB_USER` / `DB_PASSWORD` y que ejecutaste `00_crear_bd.sql`. |
+| `password authentication failed for user` | Usuario o contraseña incorrectos | Revisa `DB_USER` / `DB_PASSWORD` y que creaste el rol y la base (sección 6.1). |
 | `Connection refused` a la base | PostgreSQL apagado o puerto distinto | Verifica el servicio en el puerto 5432 o define `DB_URL`. |
-| `relation "usuarios" does not exist` | No se ejecutó el script SQL | Ejecuta `database/postgresql/01_schema.sql` con `psql`. |
+| `relation "usuarios" does not exist` | No se ejecutó el script SQL | Ejecuta `database/vlearning_postgresql.sql` con `psql`. |
 | Error de validación del esquema al arrancar | Entidad y tabla no coinciden | Mantén `ddl-auto=none` y compara con el script; los cambios van marcados `[EXT]`. |
 | `JWT_SECRET` ausente o corto | Variable no definida | Define una cadena aleatoria de al menos 32 caracteres. |
 | 401 tras un rato inactivo | Inactividad deslizante de 30 min | Inicia sesión de nuevo. |
