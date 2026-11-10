@@ -195,6 +195,9 @@ export const api = {
     crearRecurso: (contenidoId, datos) => d(client.post(`/contenidos/${contenidoId}/recursos`, datos)),
     borrarRecurso: (id) => d(client.delete(`/recursos/${id}`)),
     conformidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/conformidad`)),
+    // RF-049: verificador de accesibilidad del contenido
+    accesibilidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/accesibilidad`)),
+    verificarAccesibilidad: (contenidoId, datos) => d(client.post(`/contenidos/${contenidoId}/accesibilidad/verificar`, datos)),
     publicarContenido: (id) => d(client.post(`/contenidos/${id}/publicar`)),
     despublicarContenido: (id) => d(client.post(`/contenidos/${id}/despublicar`)),
     crearEvaluacion: (moduloId, datos) => d(client.post(`/modulos/${moduloId}/evaluaciones`, datos)),
