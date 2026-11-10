@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { api, mensajeError } from "../../api/client.js";
+import { api, codigoError, mensajeError } from "../../api/client.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { destinoInicial } from "../../utils/destino.js";
 import { AuthShell } from "../../components/layout/Shells.jsx";
@@ -22,6 +22,7 @@ export default function Login() {
   const [otpDev, setOtpDev] = useState(null);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
+  const [bloqueada, setBloqueada] = useState(false);
   const [cargando, setCargando] = useState(false);
   // RF-044: error asociado al campo del código, reenvío con espera de 60 s y foco en el campo.
   const [errorCodigo, setErrorCodigo] = useState(null);
@@ -40,6 +41,7 @@ export default function Login() {
   const enviarCredenciales = async (e) => {
     e.preventDefault();
     setError(null);
+    setBloqueada(false);
     setCargando(true);
     try {
       const r = await api.auth.login(correo.trim(), password);
@@ -61,6 +63,8 @@ export default function Login() {
           "No pudimos iniciar sesión. Revisa tu correo y contraseña.",
         ),
       );
+      // RF-043: con bloqueo temporal se ofrece el enlace de desbloqueo.
+      setBloqueada(codigoError(err) === "CUENTA_BLOQUEADA");
     } finally {
       setCargando(false);
     }
@@ -129,6 +133,13 @@ export default function Login() {
         <Banner tono="err" className="mt-5">
           {error}
         </Banner>
+      )}
+      {bloqueada && paso === 1 && (
+        <p className="mt-3">
+          <Link to="/desbloquear" className="font-bold text-primary-600 underline">
+            ¿No te llegó el enlace de desbloqueo? Pide otro
+          </Link>
+        </p>
       )}
 
       {paso === 1 ? (

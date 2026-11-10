@@ -62,7 +62,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/otp/verificar", "/api/auth/otp/reenviar",
-                                "/api/auth/recuperar", "/api/auth/restablecer").permitAll()
+                                "/api/auth/recuperar", "/api/auth/restablecer",
+                                "/api/auth/desbloquear", "/api/auth/desbloqueo/solicitar").permitAll()
                         // Las portadas de curso son públicas para que el navegador pueda cargarlas.
                         .requestMatchers(HttpMethod.GET, "/api/archivos/**").permitAll()
                         // El WebSocket se autentica en el handshake con ?token=

@@ -7,6 +7,7 @@ import { Cargando } from "../components/ui/index.jsx";
 const Login = lazy(() => import("../pages/auth/Login.jsx"));
 const Recuperar = lazy(() => import("../pages/auth/Recuperar.jsx"));
 const Restablecer = lazy(() => import("../pages/auth/Restablecer.jsx"));
+const Desbloquear = lazy(() => import("../pages/auth/Desbloquear.jsx"));
 const PrimerAcceso = lazy(() => import("../pages/auth/PrimerAcceso.jsx"));
 
 const VarkTest = lazy(() => import("../pages/onboarding/VarkTest.jsx"));
@@ -95,6 +96,7 @@ export default function AppRouter() {
           <Route path="/login" element={<Login />} />
           <Route path="/recuperar" element={<Recuperar />} />
           <Route path="/restablecer" element={<Restablecer />} />
+          <Route path="/desbloquear" element={<Desbloquear />} />
 
           <Route element={<SoloPrimerAcceso />}>
             <Route path="/primer-acceso" element={<PrimerAcceso />} />

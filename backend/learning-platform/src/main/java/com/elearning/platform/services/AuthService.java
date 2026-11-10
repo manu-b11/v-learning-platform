@@ -50,6 +50,7 @@ public class AuthService {
     private final PerfilAccesibilidadRepository perfilesAccesibilidad;
     private final EstudianteRepository estudiantes;
     private final VlearningProperties props;
+    private final DesbloqueoService desbloqueo;
     private final String hashFalso;
 
     public AuthService(UsuarioRepository usuarios, PasswordEncoder passwordEncoder, OtpService otpService,
@@ -57,7 +58,8 @@ public class AuthService {
                        RegistroAuditoriaRepository registros, NotificacionService notificaciones,
                        PerfilAprendizajeRepository perfilesAprendizaje,
                        PerfilAccesibilidadRepository perfilesAccesibilidad,
-                       EstudianteRepository estudiantes, VlearningProperties props) {
+                       EstudianteRepository estudiantes, VlearningProperties props,
+                       DesbloqueoService desbloqueo) {
         this.usuarios = usuarios;
         this.passwordEncoder = passwordEncoder;
         this.otpService = otpService;
@@ -70,6 +72,7 @@ public class AuthService {
         this.perfilesAccesibilidad = perfilesAccesibilidad;
         this.estudiantes = estudiantes;
         this.props = props;
+        this.desbloqueo = desbloqueo;
         // Para gastar el mismo tiempo cuando el correo no existe (evita enumerar cuentas).
         this.hashFalso = passwordEncoder.encode(UUID.randomUUID().toString());
     }
@@ -303,10 +306,8 @@ public class AuthService {
             usuarios.save(u);
             auditoria.registrar(u.getId(), "BLOQUEO_TEMPORAL", "demasiados intentos fallidos",
                     ResultadoAuditoria.DENEGADO, ip);
-            notificaciones.notificarPorCorreo(u, "Tu cuenta fue bloqueada temporalmente",
-                    "Detectamos " + bloqueo.intentosMaximos() + " intentos fallidos de inicio de sesión. "
-                            + "Tu cuenta estará bloqueada " + bloqueo.bloqueoMinutos() + " minutos. "
-                            + "Si no fuiste tú, cambia tu contraseña cuando puedas entrar.");
+            // RF-043: enlace de desbloqueo al correo (o desbloqueo por el administrador tras 3 bloqueos en 24 h).
+            desbloqueo.alBloquear(u, ip);
             throw cuentaBloqueada(u);
         }
     }
@@ -328,10 +329,15 @@ public class AuthService {
     }
 
     private static ApiException cuentaBloqueada(Usuario u) {
+        if (DesbloqueoService.requiereAdministrador(u, LocalDateTime.now())) {
+            return new ApiException(HttpStatus.LOCKED, "CUENTA_BLOQUEADA_ADMINISTRADOR",
+                    "Tu cuenta está bloqueada. Solo un administrador puede desbloquearla.");
+        }
         if (u.getBloqueadoHasta() != null) {
             long minutos = Math.max(1, Duration.between(LocalDateTime.now(), u.getBloqueadoHasta()).toMinutes() + 1);
             return new ApiException(HttpStatus.LOCKED, "CUENTA_BLOQUEADA",
-                    "Tu cuenta está bloqueada temporalmente. Inténtalo de nuevo en unos " + minutos + " minutos.");
+                    "Tu cuenta está bloqueada temporalmente. Te enviamos a tu correo un enlace para desbloquearla, "
+                            + "o inténtalo de nuevo en unos " + minutos + " minutos.");
         }
         return new ApiException(HttpStatus.LOCKED, "CUENTA_BLOQUEADA",
                 "Tu cuenta está bloqueada. Contacta al administrador.");
