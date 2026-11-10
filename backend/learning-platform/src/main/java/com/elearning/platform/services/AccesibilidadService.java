@@ -152,12 +152,13 @@ public class AccesibilidadService {
         c.setTextoAVoz(dto.textoAVoz());
         c.setTiempoAdicional(dto.tiempoAdicional());
         c.setSubrayarEnlaces(Boolean.TRUE.equals(dto.subrayarEnlaces())); // RF-035
+        c.setModoLectura(Boolean.TRUE.equals(dto.modoLectura())); // RF-046
         configuraciones.save(c);
     }
 
     private static ConfiguracionDto aDto(ConfiguracionAccesibilidad c) {
         return new ConfiguracionDto(c.isAltoContraste(), c.getTamanoFuente(), c.getTipografia(), c.getEspaciadoLinea(),
                 c.isNavegacionTeclado(), c.isLectorPantalla(), c.isSubtitulos(), c.isTranscripcion(),
-                c.isTextoAVoz(), c.getTiempoAdicional(), c.isSubrayarEnlaces());
+                c.isTextoAVoz(), c.getTiempoAdicional(), c.isSubrayarEnlaces(), c.isModoLectura());
     }
 }

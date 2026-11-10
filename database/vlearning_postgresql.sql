@@ -373,6 +373,7 @@ CREATE TABLE configuraciones_accesibilidad (
     texto_a_voz BOOLEAN NOT NULL DEFAULT FALSE,
     tiempo_adicional SMALLINT NOT NULL DEFAULT 0, -- porcentaje; la API lo limita a 0-200
     subrayar_enlaces BOOLEAN NOT NULL DEFAULT FALSE, -- RF-035
+    modo_lectura_predeterminado BOOLEAN NOT NULL DEFAULT FALSE, -- RF-046
     fecha_configuracion TIMESTAMP(0) NOT NULL DEFAULT LOCALTIMESTAMP(0),
     CONSTRAINT ck_config_fuente CHECK (tamano_fuente > 0),
     CONSTRAINT ck_config_espaciado CHECK (espaciado_linea IS NULL OR espaciado_linea > 0),

@@ -47,6 +47,18 @@ test("lección", async ({ page }) => {
   await revisar(page, "lección");
 });
 
+test("modo lectura sin distracciones (RF-046)", async ({ page }) => {
+  await conSesion(page, ESTUDIANTE);
+  await page.goto("/contenidos/1");
+  await page.getByRole("button", { name: "Modo lectura" }).click();
+  await expect(page.getByRole("button", { name: "Salir del modo lectura" })).toBeVisible();
+  await expect(page.getByRole("navigation")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Ayuda" })).toHaveCount(0);
+  await revisar(page, "modo lectura");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Ayuda" })).toBeVisible();
+});
+
 test("tomar evaluación", async ({ page }) => {
   await conSesion(page, ESTUDIANTE, { "vl.eval.9": "7" });
   await page.goto("/intentos/9");

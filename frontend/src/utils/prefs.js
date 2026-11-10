@@ -13,6 +13,7 @@ export const PREFS_BASE = {
   textoAVoz: false,
   tiempoAdicional: 0,
   subrayarEnlaces: false, // RF-035
+  modoLectura: false, // RF-046
 };
 
 const FUENTES = {

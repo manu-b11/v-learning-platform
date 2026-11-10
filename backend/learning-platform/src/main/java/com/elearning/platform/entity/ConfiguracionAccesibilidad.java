@@ -57,6 +57,10 @@ public class ConfiguracionAccesibilidad {
     @Column(name = "subrayar_enlaces", nullable = false)
     private boolean subrayarEnlaces = false;
 
+    /** RF-046: abrir las lecturas en modo lectura sin distracciones. */
+    @Column(name = "modo_lectura_predeterminado", nullable = false)
+    private boolean modoLectura = false;
+
     @Column(name = "fecha_configuracion", nullable = false)
     private LocalDateTime fechaConfiguracion;
 

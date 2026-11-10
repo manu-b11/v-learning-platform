@@ -14,7 +14,7 @@ class FuenteDislexiaTest {
 
     private static ConfiguracionDto con(String tipografia, Boolean subrayar) {
         return new ConfiguracionDto(false, 16, tipografia, new BigDecimal("1.50"),
-                false, false, false, false, false, 0, subrayar);
+                false, false, false, false, false, 0, subrayar, false);
     }
 
     @Test

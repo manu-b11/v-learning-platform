@@ -33,14 +33,16 @@ public final class AccesibilidadDtos {
             @NotNull(message = "Indica el tiempo adicional.") @Min(value = 0, message = "No puede ser negativo.")
             @Max(value = 200, message = "El máximo es 200 %.") Integer tiempoAdicional,
             /** RF-035: subrayar todos los enlaces (null = no). */
-            Boolean subrayarEnlaces) {
+            Boolean subrayarEnlaces,
+            /** RF-046: abrir las lecturas en modo lectura sin distracciones (null = no). */
+            Boolean modoLectura) {
 
         /** Constructor con los ajustes anteriores a RF-035 (sin subrayado de enlaces). */
         public ConfiguracionDto(boolean altoContraste, Integer tamanoFuente, String tipografia, BigDecimal espaciadoLinea,
                                 boolean navegacionTeclado, boolean lectorPantalla, boolean subtitulos,
                                 boolean transcripcion, boolean textoAVoz, Integer tiempoAdicional) {
             this(altoContraste, tamanoFuente, tipografia, espaciadoLinea, navegacionTeclado, lectorPantalla,
-                    subtitulos, transcripcion, textoAVoz, tiempoAdicional, false);
+                    subtitulos, transcripcion, textoAVoz, tiempoAdicional, false, false);
         }
     }
 

@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   Check,
   ClipboardCheck,
   ExternalLink,
@@ -17,6 +18,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useNotif } from "../../context/NotifContext.jsx";
 import { usePrefs } from "../../context/PrefsContext.jsx";
 import { useTutor } from "../../context/TutorContext.jsx";
+import { useModoLectura } from "../../context/ModoLecturaContext.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { useTexto } from "../../utils/useTexto.js";
 import { FORMATO_TEXTO } from "../../utils/format.js";
@@ -153,6 +155,19 @@ function LeccionContenido() {
   const pendiente = useRef(0);
   const inicio = useRef(0);
 
+  // RF-046: modo lectura sin distracciones en los contenidos de lectura. Si el perfil lo pide
+  // (por defecto en el perfil cognitivo) se activa al abrir la lectura; al salir de ella se apaga.
+  const { activo: lectura, activar: activarLectura, salir: salirLectura } = useModoLectura();
+  const esLectura = Boolean(c && (c.formato === "LECTURA" || c.cuerpo));
+  const lecturaAutomatica = useRef(false);
+  useEffect(() => {
+    if (esLectura && config.modoLectura && !lecturaAutomatica.current) {
+      lecturaAutomatica.current = true;
+      activarLectura();
+    }
+  }, [esLectura, config.modoLectura, activarLectura]);
+  useEffect(() => () => salirLectura(), [salirLectura]);
+
   useEffect(() => {
     if (c) setContexto({ contenidoId: c.id, titulo: c.titulo, minuto: 0 });
     return () => setContexto(null);
@@ -256,13 +271,20 @@ function LeccionContenido() {
         titulo={c.titulo}
         subtitulo={c.descripcion}
         acciones={
-          config.textoAVoz || esEstudiante ? (
-            <ControlesVoz
-              texto={textoLeible || c.descripcion || c.titulo}
-              t={t}
-              avisar={avisar}
-            />
-          ) : null
+          <>
+            {esLectura && !lectura && (
+              <Button variante="secondary" icono={BookOpen} onClick={activarLectura}>
+                {t("Modo lectura")}
+              </Button>
+            )}
+            {config.textoAVoz || esEstudiante ? (
+              <ControlesVoz
+                texto={textoLeible || c.descripcion || c.titulo}
+                t={t}
+                avisar={avisar}
+              />
+            ) : null}
+          </>
         }
       />
       {!esEstudiante && (

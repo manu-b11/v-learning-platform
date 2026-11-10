@@ -268,6 +268,12 @@ export default function Accesibilidad({ embebido = false }) {
                     onChange={(v) => actualizar({ transcripcion: v })}
                   />
                   <Toggle
+                    label={t("Abrir las lecturas en modo lectura")}
+                    descripcion={t("Oculta menús, puntos, ranking y avisos mientras lees. Sales con Esc.")}
+                    checked={Boolean(config.modoLectura)}
+                    onChange={(v) => actualizar({ modoLectura: v })}
+                  />
+                  <Toggle
                     label={t("Lectura en voz alta")}
                     descripcion={t("Botón «Leer en voz alta» en las lecciones.")}
                     checked={config.textoAVoz}
