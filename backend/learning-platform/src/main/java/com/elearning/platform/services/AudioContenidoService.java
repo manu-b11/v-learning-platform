@@ -28,7 +28,7 @@ import java.util.zip.ZipOutputStream;
 public class AudioContenidoService {
 
     /** RF-036: palabras máximas por pista (unos 10 minutos de audio a velocidad normal). */
-    static final int PALABRAS_POR_PISTA = 1500;
+    public static final int PALABRAS_POR_PISTA = 1500;
     static final double VELOCIDAD_MINIMA = 0.5;
     static final double VELOCIDAD_MAXIMA = 2.0;
 
@@ -59,7 +59,7 @@ public class AudioContenidoService {
     }
 
     /** RF-036: divide el texto en pistas de hasta maxPalabras, sin cortar frases. */
-    static List<String> dividir(String texto, int maxPalabras) {
+    public static List<String> dividir(String texto, int maxPalabras) {
         List<String> pistas = new ArrayList<>();
         StringBuilder actual = new StringBuilder();
         int palabras = 0;
@@ -80,7 +80,7 @@ public class AudioContenidoService {
     }
 
     /** Título del contenido como nombre de archivo seguro (sin tildes ni símbolos). */
-    static String nombreArchivo(String titulo) {
+    public static String nombreArchivo(String titulo) {
         String s = Normalizer.normalize(titulo == null ? "contenido" : titulo, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "").replaceAll("[^A-Za-z0-9 ._-]", "").trim().replaceAll("\\s+", " ");
         if (s.isEmpty()) s = "contenido";

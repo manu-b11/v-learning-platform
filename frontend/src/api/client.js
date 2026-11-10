@@ -141,6 +141,12 @@ export const api = {
     ampliar: (intentoId) => d(client.post(`/intentos/${intentoId}/ampliar`)),
     resultado: (intentoId) => d(client.get(`/intentos/${intentoId}/resultado`)),
   },
+  // RF-032: formatos alternativos (MP3, EPUB, HTML accesible y BRF)
+  formatos: {
+    listar: (id) => d(client.get(`/contenidos/${id}/formatos`)),
+    solicitar: (id, tipo) => d(client.post(`/contenidos/${id}/formatos/${tipo}`)),
+    descargar: (id, tipo) => descargar(client.get(`/contenidos/${id}/formatos/${tipo}/archivo`, { responseType: "blob" }), "contenido"),
+  },
   progreso: {
     dashboard: () => d(client.get("/progreso")),
     exportar: (formato) => descargar(client.get("/progreso/exportar", { params: { formato }, responseType: "blob" }),

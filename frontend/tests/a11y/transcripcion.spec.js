@@ -71,3 +71,39 @@ test("sin subtítulos aprobados no se ofrece la transcripción sincronizada", as
   await expect(page.getByRole("heading", { name: "Roles en video" })).toBeVisible();
   await expect(page.getByRole("button", { name: /(Mostrar|Ocultar) transcripción/ })).toHaveCount(0);
 });
+
+/** RF-032 (HU-032): descargar un contenido de lectura en otro formato. */
+test("pide un formato, se genera y se descarga con el título del contenido", async ({ page }) => {
+  await conSesion(page, ESTUDIANTE);
+  let estado = "SIN_GENERAR";
+  const lista = () => ({ contenidoId: 1, titulo: "Roles de Scrum", soloTranscripcion: false, mensaje: null,
+    formatos: [
+      { tipo: "MP3", nombre: "Audio MP3", estado: "SIN_GENERAR" },
+      { tipo: "EPUB", nombre: "Libro electrónico EPUB", estado },
+      { tipo: "HTML", nombre: "HTML accesible", estado: "SIN_GENERAR" },
+      { tipo: "BRF", nombre: "Braille electrónico BRF", estado: "SIN_GENERAR" }] });
+  await page.route((u) => u.pathname === "/api/contenidos/1/formatos", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(lista()) }));
+  await page.route((u) => u.pathname === "/api/contenidos/1/formatos/EPUB", (r) => {
+    estado = "LISTO";
+    return r.fulfill({ status: 202, contentType: "application/json",
+      body: JSON.stringify({ tipo: "EPUB", nombre: "Libro electrónico EPUB", estado: "GENERANDO" }) });
+  });
+  await page.route((u) => u.pathname === "/api/contenidos/1/formatos/EPUB/archivo", (r) =>
+    r.fulfill({ status: 200, contentType: "application/epub+zip", body: "PK",
+      headers: { "Content-Disposition": "attachment; filename*=UTF-8''Roles%20de%20Scrum.epub" } }));
+
+  await page.goto("/contenidos/1");
+  await page.getByRole("button", { name: "Descargar en otro formato" }).click();
+  const dialogo = page.getByRole("dialog", { name: "Descargar en otro formato" });
+  await expect(dialogo.locator("p", { hasText: /^Audio MP3$/ })).toBeVisible();
+  await dialogo.getByRole("button", { name: "Generar Libro electrónico EPUB" }).click();
+  const bajar = dialogo.getByRole("button", { name: "Descargar Libro electrónico EPUB" });
+  await expect(bajar).toBeVisible();
+  const descarga = page.waitForEvent("download");
+  await bajar.click();
+  expect((await descarga).suggestedFilename()).toBe("Roles de Scrum.epub");
+
+  const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+  expect(r.violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+});

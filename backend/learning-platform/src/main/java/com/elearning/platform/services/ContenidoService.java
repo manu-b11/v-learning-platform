@@ -82,6 +82,12 @@ public class ContenidoService {
     }
 
     /** RF-022: pasos cortos, resumen, glosario y versión simplificada. */
+    /** RF-032: el contenido, si la persona tiene acceso (misma regla que la lección). */
+    @Transactional(readOnly = true)
+    public Contenido accesible(UsuarioPrincipal u, Long contenidoId) {
+        return cargarConAcceso(u, contenidoId);
+    }
+
     /** RF-036: título y texto plano que se lee en voz alta (lectura sin marcas + transcripción). */
     public record TextoLeible(Long id, String titulo, String texto) {}
 

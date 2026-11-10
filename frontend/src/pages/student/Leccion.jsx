@@ -7,6 +7,7 @@ import {
   Check,
   ClipboardCheck,
   Download,
+  FileDown,
   ExternalLink,
   Pause,
   Play,
@@ -22,6 +23,7 @@ import { useTutor } from "../../context/TutorContext.jsx";
 import { useModoLectura } from "../../context/ModoLecturaContext.jsx";
 import TranscripcionSincronizada from "../../components/TranscripcionSincronizada.jsx";
 import InterpreteSenas from "../../components/InterpreteSenas.jsx";
+import FormatosAlternativos from "../../components/FormatosAlternativos.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { useTexto } from "../../utils/useTexto.js";
 import { FORMATO_TEXTO } from "../../utils/format.js";
@@ -32,6 +34,7 @@ import {
   Button,
   Card,
   Cargando,
+  Dialogo,
   EstadoError,
   PageHeader,
   Pestanas,
@@ -153,6 +156,7 @@ function LeccionContenido() {
     [esEstudiante, c?.cursoId],
   );
   const [pestana, setPestana] = useState("contenido");
+  const [verFormatos, setVerFormatos] = useState(false); // RF-032
   const [avance, setAvance] = useState(null);
   const medio = useRef(null);
   const pendiente = useRef(0);
@@ -313,6 +317,15 @@ function LeccionContenido() {
           </Banner>
         )
       )}
+      {/* RF-032: descargar en otro formato (MP3, EPUB, HTML accesible, braille). */}
+      <p className="mb-3">
+        <Button variante="secondary" icono={FileDown} onClick={() => setVerFormatos(true)} aria-haspopup="dialog">
+          {t("Descargar en otro formato")}
+        </Button>
+      </p>
+      <Dialogo abierto={verFormatos} onCerrar={() => setVerFormatos(false)} titulo={t("Descargar en otro formato")}>
+        {verFormatos && <FormatosAlternativos contenidoId={c.id} />}
+      </Dialogo>
       {c.opcionesAlternativas?.length > 0 && (
         <p className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           {t("También disponible como:")}{" "}
