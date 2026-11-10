@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ArrowLeft, CircleCheck, CircleX } from "lucide-react";
 import { api } from "../../api/client.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { Badge, Banner, Button, Card, Cargando, EstadoError, PageHeader, Vacio } from "../../components/ui/index.jsx";
+import AcomodacionDialogo from "../../components/AcomodacionDialogo.jsx";
+import { resumenAcomodacion } from "../../utils/acomodacion.js";
 
 const fmtPct = (v) => (v === null || v === undefined ? "—" : `${String(v).replace(".", ",")} %`);
 
@@ -38,6 +41,10 @@ export default function NotasCurso() {
   const { id } = useParams();
   const { usuario } = useAuth();
   const { datos, cargando, error, recargar } = useAsync(() => api.notas.delCurso(id), [id]);
+  // RF-041: acomodaciones activas del curso, por estudiante.
+  const acom = useAsync(() => api.acomodaciones.listar(id), [id]);
+  const [editando, setEditando] = useState(null);
+  const acomodacionDe = (estudianteId) => acom.datos?.find((a) => a.estudianteId === estudianteId) ?? null;
 
   if (cargando && !datos) return <Cargando texto="Cargando las notas del curso…" />;
   if (error && !datos) return <EstadoError mensaje={error} onReintentar={recargar} />;
@@ -117,6 +124,15 @@ export default function NotasCurso() {
                       <strong className="text-strong">{e.nombre}</strong>
                       {e.codigo && <span className="block text-xs text-muted">{e.codigo}</span>}
                       <span className="block text-xs text-muted">Avance {fmtPct(e.avance)}</span>
+                      {acomodacionDe(e.estudianteId) && (
+                        <span className="mt-1 block text-xs font-semibold text-strong">
+                          Acomodación: {resumenAcomodacion(acomodacionDe(e.estudianteId))}
+                        </span>
+                      )}
+                      <Button variante="link" className="mt-1 text-sm" onClick={() => setEditando(e)}
+                        aria-label={`Acomodaciones de ${e.nombre}`}>
+                        Acomodaciones
+                      </Button>
                     </th>
                     {e.notas.map((n) => (
                       <td key={n.clave} className="p-3" title={ESTADO_CELDA[n.estado]}>
@@ -140,6 +156,10 @@ export default function NotasCurso() {
             </table>
           </div>
         </>
+      )}
+      {editando && (
+        <AcomodacionDialogo cursoId={id} estudiante={editando} actual={acomodacionDe(editando.estudianteId)}
+          onCerrar={() => setEditando(null)} onGuardado={() => { setEditando(null); acom.recargar(); }} />
       )}
     </>
   );

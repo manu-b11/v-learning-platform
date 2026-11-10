@@ -207,6 +207,12 @@ export const api = {
   notas: {
     delCurso: (cursoId) => d(client.get(`/cursos/${cursoId}/notas`)),
   },
+  // RF-041: acomodaciones de evaluación por estudiante
+  acomodaciones: {
+    listar: (cursoId) => d(client.get(`/cursos/${cursoId}/acomodaciones`)),
+    asignar: (cursoId, datos) => d(client.post(`/cursos/${cursoId}/acomodaciones`, datos)),
+    quitar: (cursoId, id) => d(client.delete(`/cursos/${cursoId}/acomodaciones/${id}`)),
+  },
   informes: {
     vista: (filtros) => d(client.post("/informes/vista", filtros)),
     generar: (filtros) => descargar(client.post("/informes", filtros, { responseType: "blob" }),

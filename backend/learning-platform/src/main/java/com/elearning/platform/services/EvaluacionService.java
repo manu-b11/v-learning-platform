@@ -9,6 +9,7 @@ import com.elearning.platform.repository.*;
 import com.elearning.platform.util.AfinidadVark;
 import com.elearning.platform.util.CorreccionEvaluacion;
 import com.elearning.platform.util.CorreccionEvaluacion.OpcionDato;
+import com.elearning.platform.util.TiempoEvaluacion;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,7 @@ public class EvaluacionService {
     private final EstudianteRepository estudiantes;
     private final PerfilAprendizajeRepository perfiles;
     private final AccesibilidadService accesibilidad;
+    private final AcomodacionService acomodaciones;
     private final RetroalimentacionService retroalimentacion;
     private final NotificacionService notificaciones;
     private final AuditoriaService auditoria;
@@ -55,7 +57,7 @@ public class EvaluacionService {
         exigirInscrito(estudianteId, modulo);
         EstiloVark principal = perfiles.findByEstudianteId(estudianteId).map(PerfilAprendizaje::getEstiloPredominante).orElse(null);
         boolean motora = accesibilidad.categoriasDe(estudianteId).contains(CategoriaAccesibilidad.MOTORA);
-        int extra = accesibilidad.configuracionDe(estudianteId).tiempoAdicional();
+        TiempoEvaluacion extra = acomodaciones.tiempoPara(estudianteId, modulo.getCurso()); // RF-041
         String bloqueo = motivoModuloIncompleto(estudianteId, modulo);
 
         List<Evaluacion> lista = new ArrayList<>(evaluaciones.findByModuloIdOrderByIdAsc(moduloId));
@@ -71,13 +73,13 @@ public class EvaluacionService {
                     .max(Comparator.naturalOrder()).orElse(null);
             Long enProgreso = hist.stream().filter(i -> i.getEstado() == EstadoIntento.EN_PROGRESO)
                     .map(IntentoEvaluacion::getId).findFirst().orElse(null);
-            boolean vencida = plazoVencido(e);
+            boolean vencida = plazoVencido(e, extra);
             String motivo = bloqueo;
             if (vencida && enProgreso == null) motivo = "El plazo para presentar esta evaluación terminó.";
             resultado.add(new EvaluacionEstudiante(e.getId(), e.getTitulo(), e.getDescripcion(), e.getTipo(),
                     e.getPuntajeMaximo(), minutosEfectivos(e, extra), calificable,
                     calificable ? null : "No calificada por ahora: aún no tiene una alternativa accesible.",
-                    motivo == null && calificable, motivo, hist.size(), mejor, enProgreso, e.getFechaLimite(), vencida));
+                    motivo == null && calificable, motivo, hist.size(), mejor, enProgreso, extra.fechaLimite(e.getFechaLimite()), vencida));
         }
         return resultado;
     }
@@ -95,16 +97,16 @@ public class EvaluacionService {
         }
         String bloqueo = motivoModuloIncompleto(estudianteId, modulo);
         if (bloqueo != null) throw ApiException.conflicto("MODULO_INCOMPLETO", bloqueo);
+        TiempoEvaluacion extra = acomodaciones.tiempoPara(estudianteId, modulo.getCurso()); // RF-041
         boolean tieneAbierto = intentos.findFirstByEvaluacionIdAndEstudianteIdAndEstadoOrderByFechaInicioDesc(
                 evaluacionId, estudianteId, EstadoIntento.EN_PROGRESO).isPresent();
-        if (plazoVencido(e) && !tieneAbierto) {
+        if (plazoVencido(e, extra) && !tieneAbierto) {
             throw ApiException.conflicto("PLAZO_VENCIDO",
                     "El plazo para presentar esta evaluación terminó. Si lo necesitas, habla con tu instructor.");
         }
         List<Pregunta> pregs = preguntas.findByEvaluacionIdOrderByOrden(evaluacionId);
         if (pregs.isEmpty()) throw ApiException.conflicto("EVALUACION_SIN_PREGUNTAS", "Esta evaluación aún no tiene preguntas.");
 
-        int extra = accesibilidad.configuracionDe(estudianteId).tiempoAdicional();
         Optional<IntentoEvaluacion> abierto = intentos.findFirstByEvaluacionIdAndEstudianteIdAndEstadoOrderByFechaInicioDesc(
                 evaluacionId, estudianteId, EstadoIntento.EN_PROGRESO);
         if (abierto.isPresent()) {
@@ -113,7 +115,7 @@ public class EvaluacionService {
                 return vista(previo, e, pregs, extra, true);
             }
             finalizarInterno(previo, e, estudianteId); // se agotó el tiempo: se califica lo guardado
-            if (plazoVencido(e)) {
+            if (plazoVencido(e, extra)) {
                 throw ApiException.conflicto("PLAZO_VENCIDO",
                         "El plazo para presentar esta evaluación terminó. Calificamos lo que alcanzaste a responder.");
             }
@@ -130,7 +132,7 @@ public class EvaluacionService {
     public GuardadoRespuesta guardarRespuesta(Long estudianteId, Long intentoId, Long preguntaId, String valor) {
         IntentoEvaluacion i = intentoPropio(estudianteId, intentoId);
         Evaluacion e = i.getEvaluacion();
-        int extra = accesibilidad.configuracionDe(estudianteId).tiempoAdicional();
+        TiempoEvaluacion extra = acomodaciones.tiempoPara(estudianteId, e.getModulo().getCurso()); // RF-041
         if (i.getEstado() != EstadoIntento.EN_PROGRESO) {
             throw ApiException.conflicto("INTENTO_CERRADO", "Este intento ya terminó.");
         }
@@ -243,7 +245,7 @@ public class EvaluacionService {
         eventos.publishEvent(new EvaluacionFinalizadaEvent(estudianteId, e.getId(), e.getModulo().getCurso().getId(), pct, pctPrevio));
     }
 
-    private IntentoVista vista(IntentoEvaluacion i, Evaluacion e, List<Pregunta> pregs, int extra, boolean reanudado) {
+    private IntentoVista vista(IntentoEvaluacion i, Evaluacion e, List<Pregunta> pregs, TiempoEvaluacion extra, boolean reanudado) {
         Map<Long, List<OpcionRespuesta>> ops = opcionesPorPregunta(pregs);
         List<PreguntaVista> pv = pregs.stream().map(p -> new PreguntaVista(p.getId(), p.getEnunciado(), p.getTipo(),
                 p.getPuntaje(), p.getOrden(),
@@ -314,24 +316,28 @@ public class EvaluacionService {
                 "La evaluación «" + e.getTitulo() + "» no tiene alternativa accesible. Para estudiantes con necesidades motoras no se calificará hasta que la agregues.", "/cursos/" + modulo.getCurso().getId() + "/editar");
     }
 
-    /** La fecha límite es el último momento para INICIAR; un intento ya abierto se puede terminar. */
-    static boolean plazoVencido(Evaluacion e) {
-        return e.getFechaLimite() != null && java.time.LocalDateTime.now().isAfter(e.getFechaLimite());
+    /**
+     * La fecha límite es el último momento para INICIAR; un intento ya abierto se puede terminar.
+     * RF-041: una acomodación con fecha especial posterior la amplía.
+     */
+    static boolean plazoVencido(Evaluacion e, TiempoEvaluacion tiempo) {
+        LocalDateTime limite = tiempo.fechaLimite(e.getFechaLimite());
+        return limite != null && LocalDateTime.now().isAfter(limite);
     }
 
-    static Integer minutosEfectivos(Evaluacion e, int extraPorcentaje) {
-        if (e.getTiempoLimite() == null) return null;
-        return (int) Math.ceil(e.getTiempoLimite() * (100 + extraPorcentaje) / 100.0);
+    /** RF-041: minutos efectivos calculados en el servidor (el mayor entre perfil y acomodación). */
+    static Integer minutosEfectivos(Evaluacion e, TiempoEvaluacion tiempo) {
+        return tiempo.minutosLimite(e.getTiempoLimite());
     }
 
-    private Long segundosRestantes(IntentoEvaluacion i, Evaluacion e, int extra) {
+    private Long segundosRestantes(IntentoEvaluacion i, Evaluacion e, TiempoEvaluacion extra) {
         Integer min = minutosEfectivos(e, extra);
         if (min == null) return null;
         long transcurrido = Duration.between(i.getFechaInicio(), LocalDateTime.now()).getSeconds();
         return Math.max(0, min * 60L - transcurrido);
     }
 
-    private boolean vencido(IntentoEvaluacion i, Evaluacion e, int extra) {
+    private boolean vencido(IntentoEvaluacion i, Evaluacion e, TiempoEvaluacion extra) {
         Integer min = minutosEfectivos(e, extra);
         if (min == null) return false;
         return Duration.between(i.getFechaInicio(), LocalDateTime.now()).getSeconds() > min * 60L + GRACIA_SEGUNDOS;
