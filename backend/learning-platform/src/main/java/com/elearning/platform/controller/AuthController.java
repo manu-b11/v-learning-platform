@@ -89,6 +89,15 @@ public class AuthController {
         return auth.cambiarDobleFactor(principal, req, IpUtil.de(http));
     }
 
+    /** RF-042: amplía la sesión (renueva el token) cuando la persona responde al aviso de tiempo. */
+    @Operation(summary = "Ampliar la sesión (RF-042)",
+            description = "Renueva la sesión deslizante y emite un JWT nuevo para la misma sesión; el anterior deja de "
+                    + "valer. Cada respuesta autenticada trae la cabecera X-Sesion-Restante con los segundos que quedan.")
+    @PostMapping("/refresh")
+    public RenovacionRespuesta refresh(@AuthenticationPrincipal UsuarioPrincipal principal, HttpServletRequest http) {
+        return auth.renovarSesion(principal, IpUtil.de(http));
+    }
+
     @PostMapping("/logout")
     public MensajeRespuesta logout(@AuthenticationPrincipal UsuarioPrincipal principal, HttpServletRequest http) {
         auth.cerrarSesion(principal, IpUtil.de(http));

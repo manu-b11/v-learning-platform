@@ -40,6 +40,10 @@ public class IntentoEvaluacion {
     @Column(nullable = false, length = 50)
     private EstadoIntento estado = EstadoIntento.EN_PROGRESO;
 
+    /** RF-042: minutos añadidos al intento por la ampliación que permite la acomodación (RF-041). */
+    @Column(name = "minutos_ampliados", nullable = false)
+    private Integer minutosAmpliados = 0;
+
     @PrePersist
     void antesDeGuardar() {
         if (fechaInicio == null) fechaInicio = LocalDateTime.now();

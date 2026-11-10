@@ -264,6 +264,7 @@ CREATE TABLE intentos_evaluacion (
     fecha_finalizacion TIMESTAMP(0) NULL,
     puntaje DECIMAL(8,2) NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'EN_PROGRESO',
+    minutos_ampliados INT NOT NULL DEFAULT 0, -- RF-042: ampliación concedida por la acomodación (RF-041)
     CONSTRAINT ck_intento_puntaje CHECK (puntaje IS NULL OR puntaje >= 0),
     CONSTRAINT fk_intento_evaluacion FOREIGN KEY (evaluacion_id)
         REFERENCES evaluaciones(id) ON UPDATE NO ACTION ON DELETE NO ACTION,

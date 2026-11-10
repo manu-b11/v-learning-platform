@@ -86,7 +86,7 @@ public class SecurityConfig {
         c.setAllowedOrigins(props.cors().origenes());
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-        c.setExposedHeaders(List.of("Content-Disposition"));
+        c.setExposedHeaders(List.of("Content-Disposition", JwtAuthFilter.CABECERA_SESION_RESTANTE)); // RF-042
         c.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource fuente = new UrlBasedCorsConfigurationSource();
         fuente.registerCorsConfiguration("/**", c);

@@ -24,7 +24,14 @@ client.interceptors.request.use((config) => {
 
 /** Si la sesión caduca, se limpia y se avisa a la app para que lleve al login. */
 client.interceptors.response.use(
-  (r) => r,
+  (r) => {
+    // RF-042: segundos que quedan de sesión, para avisar 2 minutos antes (AvisoSesion).
+    const restante = r.headers?.["x-sesion-restante"];
+    if (restante != null && !(r.config?.url ?? "").startsWith("/auth/refresh")) {
+      window.dispatchEvent(new CustomEvent("vl:sesion-restante", { detail: Number(restante) }));
+    }
+    return r;
+  },
   (error) => {
     const status = error.response?.status;
     const ruta = error.config?.url ?? "";
@@ -93,6 +100,7 @@ export const api = {
     primerAcceso: (passwordActual, nuevaPassword) => d(client.post("/auth/primer-acceso", { passwordActual, nuevaPassword })),
     dobleFactor: (habilitado, password) => d(client.put("/auth/doble-factor", { habilitado, password })),
     logout: () => d(client.post("/auth/logout")),
+    refresh: () => d(client.post("/auth/refresh")),
   },
   vark: {
     preguntas: () => d(client.get("/vark/preguntas")),
@@ -128,6 +136,7 @@ export const api = {
     historial: (id) => d(client.get(`/evaluaciones/${id}/historial`)),
     guardar: (intentoId, preguntaId, valor) => d(client.put(`/intentos/${intentoId}/respuestas/${preguntaId}`, { valor })),
     finalizar: (intentoId) => d(client.post(`/intentos/${intentoId}/finalizar`)),
+    ampliar: (intentoId) => d(client.post(`/intentos/${intentoId}/ampliar`)),
     resultado: (intentoId) => d(client.get(`/intentos/${intentoId}/resultado`)),
   },
   progreso: {

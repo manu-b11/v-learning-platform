@@ -1,5 +1,6 @@
 package com.elearning.platform.security;
 
+import com.elearning.platform.entity.Sesion;
 import com.elearning.platform.entity.Usuario;
 import com.elearning.platform.enums.EstadoUsuario;
 import com.elearning.platform.repository.UsuarioRepository;
@@ -17,6 +18,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,9 +30,12 @@ import java.util.Set;
  */
 public class JwtAuthFilter extends OncePerRequestFilter {
 
+    /** RF-042: segundos que quedan de sesión, para avisar 2 minutos antes de que termine. */
+    public static final String CABECERA_SESION_RESTANTE = "X-Sesion-Restante";
+
     /** Con la contraseña temporal solo se puede cambiarla o salir. */
     private static final Set<String> RUTAS_PRIMER_ACCESO =
-            Set.of("/api/auth/primer-acceso", "/api/auth/logout", "/api/auth/me");
+            Set.of("/api/auth/primer-acceso", "/api/auth/logout", "/api/auth/me", "/api/auth/refresh");
 
     private final JwtService jwt;
     private final SesionService sesiones;
@@ -49,7 +55,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String cabecera = request.getHeader("Authorization");
         if (cabecera != null && cabecera.startsWith("Bearer ")) {
             String token = cabecera.substring(7).trim();
-            Optional<UsuarioPrincipal> principal = autenticar(token);
+            Optional<UsuarioPrincipal> principal = autenticar(token, response);
             if (principal.isPresent()) {
                 UsuarioPrincipal p = principal.get();
                 Usuario u = usuarios.findById(p.id()).orElse(null);
@@ -67,7 +73,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    private Optional<UsuarioPrincipal> autenticar(String token) {
+    private Optional<UsuarioPrincipal> autenticar(String token, HttpServletResponse response) {
         Optional<Claims> claims = jwt.leer(token);
         if (claims.isEmpty() || claims.get().getSubject() == null || claims.get().get("sid") == null) {
             return Optional.empty();
@@ -80,13 +86,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } catch (RuntimeException e) {
             return Optional.empty();
         }
-        if (sesiones.validar(sesionId, usuarioId, token).isEmpty()) return Optional.empty();
+        Optional<Sesion> sesion = sesiones.validar(sesionId, usuarioId, token);
+        if (sesion.isEmpty()) return Optional.empty();
 
         Usuario u = usuarios.findById(usuarioId).orElse(null);
         if (u == null) return Optional.empty();
         boolean habilitado = u.getEstado() == EstadoUsuario.ACTIVO
                 || u.getEstado() == EstadoUsuario.PENDIENTE_PRIMER_ACCESO;
         if (!habilitado || u.estaBloqueadoTemporalmente()) return Optional.empty();
+        Date expiraToken = claims.get().getExpiration();
+        response.setHeader(CABECERA_SESION_RESTANTE, String.valueOf(SesionService.segundosRestantes(
+                sesion.get().getFechaExpiracion(), expiraToken == null ? null : expiraToken.toInstant(), Instant.now())));
         return Optional.of(new UsuarioPrincipal(u.getId(), u.getCorreoInstitucional(), u.getNombre(), u.getRol(), sesionId));
     }
 }

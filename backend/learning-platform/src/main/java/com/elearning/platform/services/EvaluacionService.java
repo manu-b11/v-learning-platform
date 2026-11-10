@@ -256,7 +256,8 @@ public class EvaluacionService {
             if (r.getValor() != null) guardadas.put(r.getPregunta().getId(), r.getValor());
         });
         return new IntentoVista(i.getId(), e.getId(), e.getTitulo(), e.getTipo(), i.getEstado(), i.getFechaInicio(),
-                minutosEfectivos(e, extra), segundosRestantes(i, e, extra), pv, guardadas, reanudado);
+                minutosEfectivos(e, extra), segundosRestantes(i, e, extra), pv, guardadas, reanudado,
+                ampliacionDisponible(i, e, extra));
     }
 
     private Map<Long, List<OpcionRespuesta>> opcionesPorPregunta(List<Pregunta> pregs) {
@@ -330,9 +331,60 @@ public class EvaluacionService {
         return tiempo.minutosLimite(e.getTiempoLimite());
     }
 
+    /**
+     * RF-042: el estudiante amplía el intento una sola vez, con los minutos que permite su acomodación
+     * (RF-041) y solo cuando le quedan pocos minutos. Sin acomodación que lo permita responde 409.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public AmpliacionRespuesta ampliar(Long estudianteId, Long intentoId, String ip) {
+        IntentoEvaluacion i = intentoPropio(estudianteId, intentoId);
+        Evaluacion e = i.getEvaluacion();
+        if (i.getEstado() != EstadoIntento.EN_PROGRESO) {
+            throw ApiException.conflicto("INTENTO_CERRADO", "Este intento ya terminó.");
+        }
+        TiempoEvaluacion extra = acomodaciones.tiempoPara(estudianteId, e.getModulo().getCurso());
+        if (vencido(i, e, extra)) {
+            finalizarInterno(i, e, estudianteId);
+            throw ApiException.conflicto("TIEMPO_AGOTADO", "Se acabó el tiempo. Calificamos lo que alcanzaste a responder.");
+        }
+        Long restantes = segundosRestantes(i, e, extra);
+        int ampliados = i.getMinutosAmpliados() == null ? 0 : i.getMinutosAmpliados();
+        if (!puedeAmpliar(restantes, extra.minutosAmpliacion(), ampliados)) {
+            throw ApiException.conflicto("AMPLIACION_NO_PERMITIDA",
+                    "Esta evaluación no permite ampliar el tiempo. Tus respuestas se guardan solas al responder cada pregunta.");
+        }
+        i.setMinutosAmpliados(ampliados + extra.minutosAmpliacion());
+        intentos.save(i);
+        auditoria.registrar(estudianteId, "INTENTO_AMPLIADO",
+                "intentos/" + intentoId + " +" + extra.minutosAmpliacion() + " min", ResultadoAuditoria.PERMITIDO, ip);
+        return new AmpliacionRespuesta(i.getId(), i.getMinutosAmpliados(), segundosRestantes(i, e, extra));
+    }
+
+    /** RF-042: segundos antes del final en que aparece el aviso. */
+    static final long SEGUNDOS_AVISO = 120;
+
+    /**
+     * RF-042: se puede ampliar si hay límite de tiempo, la acomodación da minutos, aún no se amplió
+     * este intento y faltan como mucho 5 minutos (margen sobre el aviso de 2 minutos).
+     */
+    static boolean puedeAmpliar(Long segundosRestantes, int minutosDisponibles, int minutosYaAmpliados) {
+        return segundosRestantes != null && minutosDisponibles > 0 && minutosYaAmpliados == 0
+                && segundosRestantes <= SEGUNDOS_AVISO + 180;
+    }
+
+    private int ampliacionDisponible(IntentoEvaluacion i, Evaluacion e, TiempoEvaluacion extra) {
+        int ampliados = i.getMinutosAmpliados() == null ? 0 : i.getMinutosAmpliados();
+        return minutosEfectivos(e, extra) == null || ampliados > 0 ? 0 : extra.minutosAmpliacion();
+    }
+
+    private static int minutosTotales(int minutosLimite, IntentoEvaluacion i) {
+        return minutosLimite + (i.getMinutosAmpliados() == null ? 0 : i.getMinutosAmpliados());
+    }
+
     private Long segundosRestantes(IntentoEvaluacion i, Evaluacion e, TiempoEvaluacion extra) {
         Integer min = minutosEfectivos(e, extra);
         if (min == null) return null;
+        min = minutosTotales(min, i);
         long transcurrido = Duration.between(i.getFechaInicio(), LocalDateTime.now()).getSeconds();
         return Math.max(0, min * 60L - transcurrido);
     }
@@ -340,6 +392,7 @@ public class EvaluacionService {
     private boolean vencido(IntentoEvaluacion i, Evaluacion e, TiempoEvaluacion extra) {
         Integer min = minutosEfectivos(e, extra);
         if (min == null) return false;
+        min = minutosTotales(min, i);
         return Duration.between(i.getFechaInicio(), LocalDateTime.now()).getSeconds() > min * 60L + GRACIA_SEGUNDOS;
     }
 }

@@ -55,7 +55,11 @@ public final class EvaluacionDtos {
 
     public record IntentoVista(Long id, Long evaluacionId, String titulo, TipoEvaluacion tipo, EstadoIntento estado,
                                LocalDateTime fechaInicio, Integer tiempoLimiteMinutos, Long segundosRestantes,
-                               List<PreguntaVista> preguntas, Map<Long, String> respuestas, boolean reanudado) {}
+                               List<PreguntaVista> preguntas, Map<Long, String> respuestas, boolean reanudado,
+                               int minutosAmpliacionDisponibles) {}
+
+    /** RF-042: resultado de ampliar el intento. */
+    public record AmpliacionRespuesta(Long intentoId, int minutosAmpliados, Long segundosRestantes) {}
 
     public record RespuestaRequest(@Size(max = 2000, message = "Máximo 2000 caracteres.") String valor) {}
 

@@ -43,6 +43,9 @@ export default function TomarEvaluacion() {
   const [estadoGuardado, setEstadoGuardado] = useState("");
   const [confirmar, setConfirmar] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
+  // RF-042: aviso a 2 minutos del final y ampliación si la acomodación (RF-041) lo permite.
+  const [ampliando, setAmpliando] = useState(false);
+  const [estadoAmpliacion, setEstadoAmpliacion] = useState("");
   const foco = useRef(null);
   const enviado = useRef(false);
 
@@ -88,6 +91,23 @@ export default function TomarEvaluacion() {
     catch (e) { setEstadoGuardado(mensajeError(e, t("No se pudo guardar. Se volverá a intentar al cambiar de pregunta."))); }
   };
   const bajo = segundos !== null && segundos <= 60;
+  const aviso = segundos !== null && segundos > 0 && segundos <= 120;
+  const minutosAmpliables = intento.minutosAmpliacionDisponibles ?? 0;
+  const ampliar = async () => {
+    setAmpliando(true);
+    try {
+      const r = await api.evaluaciones.ampliar(Number(id));
+      setSegundos(r.segundosRestantes);
+      setIntento((i) => ({ ...i, minutosAmpliacionDisponibles: 0 }));
+      const fin = new Date(Date.now() + r.segundosRestantes * 1000)
+        .toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+      setEstadoAmpliacion(`${t("Ampliamos tu tiempo. Ahora terminas a las")} ${fin}.`);
+    } catch (e) {
+      setEstadoAmpliacion(mensajeError(e));
+    } finally {
+      setAmpliando(false);
+    }
+  };
 
   return (
     <>
@@ -101,6 +121,20 @@ export default function TomarEvaluacion() {
         )}
       </div>
       {segundos !== null && <p className="sr-only" role="status" aria-live="polite">{bajo ? t("Queda menos de un minuto.") : ""}</p>}
+      <div role="alert" className="empty:hidden">
+        {aviso && (
+          <Banner tono="warn" className="mb-4">
+            <span className="block">{t("Quedan 2 minutos o menos.")} {t("Tus respuestas se guardan solas al responder cada pregunta.")}</span>
+            {minutosAmpliables > 0 && (
+              <Button variante="secondary" className="mt-2" onClick={ampliar} cargando={ampliando}>
+                {`${t("Ampliar tiempo")} (+${minutosAmpliables} min)`}
+              </Button>
+            )}
+          </Banner>
+        )}
+      </div>
+      <p className="sr-only" role="status" aria-live="polite">{estadoAmpliacion}</p>
+      {estadoAmpliacion && !aviso && <Banner tono="ok" className="mb-4">{estadoAmpliacion}</Banner>}
       {intento.reanudado && <Banner tono="info" className="mb-4">{t("Retomaste tu intento donde lo dejaste.")}</Banner>}
       {error && <Banner tono="err" className="mb-4" rol="alert">{error}</Banner>}
       <p className="mb-1 text-sm font-bold text-primary-700" aria-live="polite">Pregunta {indice + 1} de {preguntas.length}</p>

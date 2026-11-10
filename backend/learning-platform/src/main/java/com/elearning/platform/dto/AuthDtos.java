@@ -77,6 +77,9 @@ public final class AuthDtos {
             boolean dobleFactorHabilitado,
             boolean dobleFactorObligatorio) {}
 
+    /** RF-042: token renovado y segundos que quedan de sesión con él. */
+    public record RenovacionRespuesta(String token, String tipo, long segundosRestantes) {}
+
     public record SesionRespuesta(
             String token,
             String tipo,

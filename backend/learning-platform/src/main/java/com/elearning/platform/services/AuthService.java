@@ -202,6 +202,20 @@ public class AuthService {
         return abrirSesion(u, correoNormalizado, ip);
     }
 
+    /** RF-042: amplía la sesión al responder al aviso de tiempo. */
+    @Transactional
+    public RenovacionRespuesta renovarSesion(UsuarioPrincipal principal, String ip) {
+        Usuario u = usuarios.findById(principal.id())
+                .orElseThrow(() -> ApiException.noAutenticado("NO_AUTENTICADO", "Tu sesión no es válida."));
+        SesionService.TokenEmitido emitido = sesiones.renovar(principal.sesionId(), u)
+                .orElseThrow(() -> ApiException.noAutenticado("SESION_EXPIRADA", "Tu sesión terminó. Inicia sesión de nuevo."));
+        auditoria.registrar(u.getId(), "SESION_RENOVADA", "sesiones/" + principal.sesionId(), ResultadoAuditoria.PERMITIDO, ip);
+        long restantes = SesionService.segundosRestantes(emitido.expiraPorInactividad(),
+                java.time.Instant.now().plus(props.jwt().expiracionHoras(), java.time.temporal.ChronoUnit.HOURS),
+                java.time.Instant.now());
+        return new RenovacionRespuesta(emitido.token(), "Bearer", restantes);
+    }
+
     /** Cierra el flujo de autenticación: reinicia contadores, emite el JWT y audita. */
     private SesionRespuesta abrirSesion(Usuario u, String correoNormalizado, String ip) {
         u.reiniciarIntentosFallidos();
