@@ -171,6 +171,13 @@ h2[tabindex="-1"]:focus-visible {
 }
 
 /* Movimiento reducido: sistema operativo o preferencia guardada. */
+/* RF-035: todos los enlaces subrayados para distinguirlos sin depender del color (WCAG 1.4.1). */
+html[data-links="underline"] a {
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -321,8 +328,13 @@ html[data-font="atkinson"] {
 html[data-font="lexend"] {
   --app-font: "Lexend Variable", "Lexend", system-ui, sans-serif;
 }
+/* RF-035: OpenDyslexic, fuente diseñada para dislexia (opción adicional a Lexend). */
+html[data-font="opendyslexic"] {
+  --app-font: "OpenDyslexic", "Lexend Variable", system-ui, sans-serif;
+}
 html[data-font="atkinson"],
 html[data-font="lexend"],
+html[data-font="opendyslexic"],
 html[data-font="arial"],
 html[data-font="verdana"],
 html[data-font="sistema"] {

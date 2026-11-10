@@ -12,6 +12,22 @@ import java.util.List;
 
 public interface NotificacionRepository extends JpaRepository<Notificacion, Long> {
 
+    /** RF-047: notificaciones guardadas para el resumen cuya hora ya llegó. */
+    @Query("select n from Notificacion n join fetch n.usuario where n.enResumen = true and n.pospuestaHasta <= :ahora "
+            + "order by n.usuario.id, n.fechaCreacion")
+    List<Notificacion> paraResumen(@Param("ahora") LocalDateTime ahora);
+
+    /** RF-047: al cambiar la hora del resumen, lo pendiente pasa a la nueva hora. */
+    @Modifying
+    @Query("update Notificacion n set n.pospuestaHasta = :hora where n.usuario.id = :usuarioId and n.enResumen = true")
+    int reprogramarResumen(@Param("usuarioId") Long usuarioId, @Param("hora") LocalDateTime hora);
+
+    /** RF-047: si se desactiva el resumen, lo pendiente se muestra de inmediato. */
+    @Modifying
+    @Query("update Notificacion n set n.pospuestaHasta = null, n.enResumen = false "
+            + "where n.usuario.id = :usuarioId and n.enResumen = true")
+    int liberarResumen(@Param("usuarioId") Long usuarioId);
+
     /** Notificaciones visibles: las pospuestas no aparecen hasta su fecha (RF-011). */
     @Query("select n from Notificacion n where n.usuario.id = :usuarioId "
             + "and (n.pospuestaHasta is null or n.pospuestaHasta <= :ahora) "

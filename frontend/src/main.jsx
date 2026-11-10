@@ -12,6 +12,9 @@ import "@fontsource/atkinson-hyperlegible-next/400.css";
 import "@fontsource/atkinson-hyperlegible-next/700.css";
 import "@fontsource/atkinson-hyperlegible-next/800.css";
 import "@fontsource-variable/lexend";
+// RF-035: fuente para dislexia, opción adicional a Lexend.
+import "@fontsource/opendyslexic/400.css";
+import "@fontsource/opendyslexic/700.css";
 import "./index.css";
 import App from "./App.jsx";
 

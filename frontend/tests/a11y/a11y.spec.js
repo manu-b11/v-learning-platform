@@ -47,6 +47,18 @@ test("lección", async ({ page }) => {
   await revisar(page, "lección");
 });
 
+test("modo lectura sin distracciones (RF-046)", async ({ page }) => {
+  await conSesion(page, ESTUDIANTE);
+  await page.goto("/contenidos/1");
+  await page.getByRole("button", { name: "Modo lectura" }).click();
+  await expect(page.getByRole("button", { name: "Salir del modo lectura" })).toBeVisible();
+  await expect(page.getByRole("navigation")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Ayuda" })).toHaveCount(0);
+  await revisar(page, "modo lectura");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Ayuda" })).toBeVisible();
+});
+
 test("tomar evaluación", async ({ page }) => {
   await conSesion(page, ESTUDIANTE, { "vl.eval.9": "7" });
   await page.goto("/intentos/9");
@@ -58,6 +70,16 @@ test("mi progreso", async ({ page }) => {
   await conSesion(page, ESTUDIANTE);
   await page.goto("/progreso");
   await expect(page.getByRole("heading", { name: /progreso/i, level: 1 })).toBeVisible();
+  // RF-033: resumen en texto y «Ver como tabla» operable con teclado.
+  await expect(page.getByText("Tienes 1 curso: «Metodologías ágiles» con 40 % de avance.")).toBeVisible();
+  const boton = page.getByRole("button", { name: "Ver como tabla" });
+  await expect(page.getByRole("table", { name: "Detalle del avance por curso" })).toBeHidden();
+  await boton.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Ocultar tabla" })).toHaveAttribute("aria-expanded", "true");
+  const tabla = page.getByRole("table", { name: "Detalle del avance por curso" });
+  await expect(tabla.getByRole("rowheader", { name: "Metodologías ágiles" })).toBeVisible();
+  await expect(tabla.getByRole("columnheader", { name: /Avance|Progreso/ })).toBeVisible();
   await revisar(page, "mi progreso");
 });
 

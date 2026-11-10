@@ -37,6 +37,7 @@ public class InstructorCursoService {
     private final AuditoriaService auditoria;
     private final NotificacionService notificaciones;
     private final AccesibilidadContenidoService verificador;
+    private final SubtitulosService subtitulos;
 
     @Transactional(readOnly = true)
     public List<CursoResumen> listar(Long instructorId) {
@@ -142,6 +143,7 @@ public class InstructorCursoService {
         aplicar(c, req);
         c = contenidos.save(c);
         auditoria.registrar(instructorId, "CONTENIDO_CREADO", "contenidos/" + c.getId(), ResultadoAuditoria.PERMITIDO, ip);
+        subtitulos.alGuardarContenido(c, instructorId); // RF-037: borrador automático de subtítulos
         return item(c, List.of());
     }
 
@@ -152,6 +154,7 @@ public class InstructorCursoService {
         aplicar(c, req);
         contenidos.save(c);
         auditoria.registrar(instructorId, "CONTENIDO_ACTUALIZADO", "contenidos/" + contenidoId, ResultadoAuditoria.PERMITIDO, ip);
+        subtitulos.alGuardarContenido(c, instructorId); // RF-037: si cambió el medio, nuevo borrador
         return item(c, recursos.findByContenidoIdOrderByIdAsc(contenidoId));
     }
 
@@ -175,16 +178,49 @@ public class InstructorCursoService {
             throw ApiException.solicitudInvalida("TEXTO_REQUERIDO", "Escribe el texto en la descripción del recurso.");
         }
         if (!sinUrl) validarUrl(req.url());
+        if (req.tipo() == TipoRecursoAccesible.LENGUA_SENAS) validarLenguaSenas(c, req.desfaseMs());
         RecursoAccesible r = new RecursoAccesible();
         r.setContenido(c);
         r.setTipo(req.tipo());
         r.setUrl(sinUrl ? "interno:texto" : req.url().trim()); // la columna url es obligatoria
         r.setDescripcion(req.descripcion());
         r.setDisponible(true);
+        if (req.tipo() == TipoRecursoAccesible.LENGUA_SENAS && req.desfaseMs() != null) r.setDesfaseMs(req.desfaseMs());
         r = recursos.save(r);
         auditoria.registrar(instructorId, "RECURSO_ACCESIBLE_AGREGADO", "contenidos/" + contenidoId + " " + req.tipo(),
                 ResultadoAuditoria.PERMITIDO, ip);
         return aRespuesta(r);
+    }
+
+    /** RF-040: ajusta el desfase del video del intérprete para que vaya sincronizado con el original. */
+    @Transactional
+    public RecursoRespuesta ajustarDesfase(Long recursoId, Long instructorId, int desfaseMs, String ip) {
+        RecursoAccesible r = recursos.findById(recursoId)
+                .orElseThrow(() -> ApiException.noEncontrado("No encontramos ese recurso."));
+        acceso.contenidoPropio(r.getContenido().getId(), instructorId);
+        if (r.getTipo() != TipoRecursoAccesible.LENGUA_SENAS) {
+            throw ApiException.solicitudInvalida("NO_ES_LENGUA_SENAS", "El desfase solo aplica al video de lengua de señas.");
+        }
+        validarLenguaSenas(r.getContenido(), desfaseMs);
+        r.setDesfaseMs(desfaseMs);
+        recursos.save(r);
+        auditoria.registrar(instructorId, "DESFASE_LENGUA_SENAS", "recursos/" + recursoId + " " + desfaseMs + " ms",
+                ResultadoAuditoria.PERMITIDO, ip);
+        return aRespuesta(r);
+    }
+
+    /** RF-040: máximo desfase admitido (10 minutos). */
+    static final int DESFASE_MAXIMO_MS = 600_000;
+
+    /** RF-040: la interpretación se asocia a un video o a una lectura, con un desfase razonable. */
+    static void validarLenguaSenas(Contenido c, Integer desfaseMs) {
+        if (c.getFormato() != FormatoContenido.VIDEO && c.getFormato() != FormatoContenido.LECTURA) {
+            throw ApiException.solicitudInvalida("FORMATO_SIN_LENGUA_SENAS",
+                    "La interpretación en lengua de señas se asocia a un video o a una lectura.");
+        }
+        if (desfaseMs != null && Math.abs(desfaseMs) > DESFASE_MAXIMO_MS) {
+            throw ApiException.solicitudInvalida("DESFASE_INVALIDO", "El desfase no puede superar 10 minutos.");
+        }
     }
 
     @Transactional
@@ -298,7 +334,8 @@ public class InstructorCursoService {
     }
 
     private static RecursoRespuesta aRespuesta(RecursoAccesible r) {
-        return new RecursoRespuesta(r.getId(), r.getTipo(), r.getUrl(), r.getDescripcion(), r.isDisponible());
+        return new RecursoRespuesta(r.getId(), r.getTipo(), r.getUrl(), r.getDescripcion(), r.isDisponible(),
+                r.getDesfaseMs() == null ? 0 : r.getDesfaseMs());
     }
 
     /** Solo http(s) o rutas internas: evita javascript: y similares. */

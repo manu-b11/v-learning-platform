@@ -5,6 +5,7 @@ import { useNotif } from "../context/NotifContext.jsx";
 import { fmtFecha } from "../utils/format.js";
 import { useTexto } from "../utils/useTexto.js";
 import { Badge, Banner, Button, Card, Dialogo, TextField } from "./ui/index.jsx";
+import BotonDictado from "./BotonDictado.jsx";
 
 function Estado({ tarea }) {
   const t = useTexto();
@@ -32,7 +33,11 @@ function FormularioEntrega({ tarea, onListo, onCancelar }) {
     <form onSubmit={enviar} noValidate className="grid gap-4">
       {tarea.descripcion && <p className="whitespace-pre-wrap">{tarea.descripcion}</p>}
       {error && <Banner tono="err" rol="alert">{error}</Banner>}
-      <TextField multilinea label={t("Tu respuesta")} maxLength={10000} value={texto} onChange={(e) => setTexto(e.target.value)} error={campos.texto} />
+      <div>
+        <TextField multilinea label={t("Tu respuesta")} maxLength={10000} value={texto} onChange={(e) => setTexto(e.target.value)} error={campos.texto} />
+        {/* RF-045: dictar la tarea por voz */}
+        <BotonDictado valor={texto} onCambio={setTexto} campo={t("en tu respuesta")} />
+      </div>
       <TextField label={t("Enlace a tu trabajo (opcional)")} type="url" placeholder="https://" value={enlace} onChange={(e) => setEnlace(e.target.value)}
         ayuda={t("Por ejemplo un documento en la nube o un repositorio.")} error={campos.enlace} />
       <div className="flex flex-wrap gap-3">

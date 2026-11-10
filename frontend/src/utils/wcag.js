@@ -9,5 +9,8 @@ export const CRITERIOS_WCAG = {
   "2.4.4": "Propósito de los enlaces (en contexto)",
 };
 
+/** RF-039 (criterio 4): hallazgos que se resuelven con el borrador automático de subtítulos (RF-037). */
+export const REGLAS_CON_BORRADOR = new Set(["AUDIO_SIN_TRANSCRIPCION", "VIDEO_SIN_SUBTITULOS", "VIDEO_SIN_TRANSCRIPCION"]);
+
 /** Hallazgos que trae una respuesta 422 de publicación (RF-049), o null. */
 export const hallazgosDeError = (error) => error?.response?.data?.hallazgos ?? null;

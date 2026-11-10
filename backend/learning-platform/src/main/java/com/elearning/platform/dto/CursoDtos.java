@@ -34,12 +34,28 @@ public final class CursoDtos {
             String cuerpo) {}
 
     /** Para SUBTITULO, AUDIO y LENGUA_SENAS se exige url; para el resto, el texto va en descripcion. */
+    /** desfaseMs (RF-040): adelanto (+) o atraso (−) del video de lengua de señas respecto al original. */
     public record RecursoRequest(
             @NotNull(message = "Elige el tipo de recurso.") TipoRecursoAccesible tipo,
             @Size(max = 500, message = "Máximo 500 caracteres.") String url,
-            String descripcion) {}
+            String descripcion,
+            Integer desfaseMs) {
 
-    public record RecursoRespuesta(Long id, TipoRecursoAccesible tipo, String url, String descripcion, boolean disponible) {}
+        public RecursoRequest(TipoRecursoAccesible tipo, String url, String descripcion) {
+            this(tipo, url, descripcion, null);
+        }
+    }
+
+    public record RecursoRespuesta(Long id, TipoRecursoAccesible tipo, String url, String descripcion, boolean disponible,
+                                   int desfaseMs) {
+
+        public RecursoRespuesta(Long id, TipoRecursoAccesible tipo, String url, String descripcion, boolean disponible) {
+            this(id, tipo, url, descripcion, disponible, 0);
+        }
+    }
+
+    /** RF-040: ajustar el desfase entre el video del intérprete y el original. */
+    public record DesfaseRequest(@NotNull(message = "Indica el desfase en milisegundos.") Integer desfaseMs) {}
 
     public record ContenidoItem(Long id, String titulo, FormatoContenido formato, Integer duracionMinutos,
                                 boolean publicado, boolean afin, EstadoProgreso estado, BigDecimal porcentaje,

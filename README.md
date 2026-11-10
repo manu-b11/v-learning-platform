@@ -41,7 +41,7 @@ Proyecto de aula · Tecnológico de Antioquia I.U. · Autores: Manuela Bolívar 
 
 | # | Objetivo | Dónde se cumple |
 |---|---|---|
-| OBJ-1 | Acceso controlado, trazable y accesible | RF-001 a RF-003, RF-013, RF-014 a RF-022; accesibilidad en acceso y evaluaciones: RF-039, RF-041 a RF-044, RF-048, RF-049 |
+| OBJ-1 | Acceso controlado, trazable y accesible | RF-001 a RF-003, RF-013, RF-014 a RF-022; accesibilidad en acceso y evaluaciones: RF-039, RF-041 a RF-044, RF-048, RF-049; accesibilidad en contenidos y comunicación: RF-032 a RF-038, RF-040, RF-045 a RF-047 |
 | OBJ-2 | Personalizar según el perfil del estudiante | RF-004, RF-005 |
 | OBJ-3 | Visibilidad del avance | RF-006, RF-011, RF-012 |
 | OBJ-4 | Medir el aprendizaje de forma adaptativa | RF-007, RF-008 |
@@ -107,7 +107,12 @@ v-learning-platform/
 │  ├─ migracion_auditoria_inmutable_y_cola_chat.sql
 │  ├─ migracion_desbloqueo_cuenta.sql          RF-043
 │  ├─ migracion_acomodaciones.sql              RF-041, RF-042
-│  └─ migracion_verificador_accesibilidad.sql  RF-049, RF-039
+│  ├─ migracion_verificador_accesibilidad.sql  RF-049, RF-039
+│  ├─ migracion_preferencias_accesibilidad.sql RF-034, RF-035, RF-046
+│  ├─ migracion_resumen_notificaciones.sql     RF-047
+│  ├─ migracion_lengua_senas.sql               RF-040
+│  ├─ migracion_subtitulos_automaticos.sql     RF-037
+│  └─ migracion_formatos_alternativos.sql      RF-032
 │                                   Migración: auditoría de solo inserción y cola de reenvío del chat
 ├─ docs/
 │  └─ img/                           Imágenes del README (sección 12)
@@ -167,6 +172,11 @@ v-learning-platform/
    psql -U vlearning_admin -d vlearning -f database/migracion_desbloqueo_cuenta.sql
    psql -U vlearning_admin -d vlearning -f database/migracion_acomodaciones.sql
    psql -U vlearning_admin -d vlearning -f database/migracion_verificador_accesibilidad.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_preferencias_accesibilidad.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_resumen_notificaciones.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_lengua_senas.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_subtitulos_automaticos.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_formatos_alternativos.sql
    ```
 4. La tabla `registros_auditoria` es de **solo inserción**: los triggers `trg_registros_auditoria_inmutable` y `trg_registros_auditoria_sin_truncate` rechazan `UPDATE`, `DELETE` y `TRUNCATE` para cualquier rol, incluido el dueño. Opcional: un rol de aplicación sin privilegios de dueño (bloque comentado al final del script).
 
@@ -355,7 +365,7 @@ flowchart TD
 1. El administrador lo registra (RF-001) → entra con la contraseña temporal (RF-002) → **cambia la contraseña**.
 2. **Onboarding:** test VARK con ayuda por pregunta y guardado parcial (RF-004) → método recomendado y segundo opcional → perfil de accesibilidad con vista previa (RF-014).
 3. **Inicio:** hero "Qué bueno verte, {nombre}", "Continuar aprendiendo", pendientes y puntos.
-4. **RF-005 · Cursos:** detalle con módulos ordenados → lección con video, subtítulos, transcripción sincronizada, leer en voz alta (RF-018, 019), otros formatos y apoyo cognitivo (RF-022).
+4. **RF-005 · Cursos:** detalle con módulos ordenados → lección con video, subtítulos, transcripción sincronizada (RF-038), leer en voz alta (RF-018, 019), otros formatos y apoyo cognitivo (RF-022).
 5. **RF-007 y RF-008 · Evaluaciones:** habilitadas al completar el módulo → intento con guardado automático y cronómetro → resultado con retroalimentación → repetir si quiere.
 6. **RF-006 y RF-009:** *Mi progreso* (con exportación) y *Logros* (con modo privado).
 7. **RF-010 · Comunidad**, **RF-011 · notificaciones**, **RF-024 · Tutor IA**, **Accesibilidad** (RF-014 a RF-022) y **Configuración** (método VARK, notificaciones).
@@ -412,6 +422,17 @@ flowchart TD
 | RF-044 | HU-044 | Código OTP accesible | `OtpService`, `AuthService`; `Login.jsx` | `POST /auth/otp/reenviar` |
 | RF-048 | HU-048 | Ayuda en un lugar consistente | Frontend (`BotonAyuda`, `utils/ayuda.js`) | — |
 | RF-049 | HU-049 | Verificador de accesibilidad del contenido | `AccesibilidadContenidoService` (commonmark + jsoup), `HallazgoAccesibilidad` | `GET /contenidos/{id}/accesibilidad`, `POST /contenidos/{id}/accesibilidad/verificar` |
+| RF-032 | HU-032 | Formatos alternativos (MP3, EPUB, HTML accesible, BRF) | `FormatosService`, `FormatosGeneracion` (`@Async`), `GeneradorFormatos`, `ServicioBraille`, `FormatoAlternativo` | `GET /contenidos/{id}/formatos`, `POST /contenidos/{id}/formatos/{tipo}`, `GET /contenidos/{id}/formatos/{tipo}/archivo` |
+| RF-033 | HU-033 | Alternativa textual de los gráficos | `DashboardService` (`ResumenProgreso`), `ExportadorInforme` (PDF etiquetado); `MiProgreso.jsx` | `GET /progreso` (campo `resumenes`), `GET /progreso/exportar` |
+| RF-034 | HU-034 | Anunciar mensajes y notificaciones | `ChatDtos.MensajeDto.textoPlano`, `AccesibilidadService` (`anunciarMensajes`); `Comunidad.jsx`, `NotifContext` | `PUT /accesibilidad/configuracion`, `WS /ws/cursos/{id}` |
+| RF-035 | HU-035 | Fuente para dislexia y subrayado de enlaces | `ReglasAccesibilidad` (OpenDyslexic), `AccesibilidadService` (`subrayarEnlaces`); `prefs.js` | `PUT /accesibilidad/configuracion` |
+| RF-036 | HU-036 | MP3 de la lectura en voz alta | `AudioContenidoService`, `ServicioTextoAVoz` (prueba / espeak-ng) | `GET /contenidos/{id}/audio?velocidad=` |
+| RF-037 | HU-037 | Subtítulos automáticos con revisión | `SubtitulosService`, `SubtitulosGeneracion` (`@Async`), `ServicioTranscripcion` (prueba / whisper.cpp), `Vtt` | `GET/POST/PUT /contenidos/{id}/subtitulos/borrador`, `POST .../aprobar`, `POST /contenidos/{id}/subtitulos/archivo`, `GET /archivos/subtitulos/{id}.vtt` |
+| RF-038 | HU-038 | Transcripción sincronizada | Frontend (`TranscripcionSincronizada`, `utils/vtt.js`) | VTT de los subtítulos aprobados |
+| RF-040 | HU-040 | Video de lengua de señas | `InstructorCursoService` (`desfaseMs`); `InterpreteSenas.jsx` | `POST /contenidos/{id}/recursos`, `PATCH /recursos/{id}/desfase` |
+| RF-045 | HU-045 | Dictado por voz | Frontend (`useDictado`, Web Speech API) | — |
+| RF-046 | HU-046 | Modo lectura sin distracciones | `ModoLecturaContext`, `AccesibilidadService` (`modoLectura`) | `PUT /accesibilidad/configuracion` |
+| RF-047 | HU-047 | Resumen diario y pausa de gamificación | `NotificacionService`, `ResumenDiarioJob` (`@Scheduled`), `GamificacionService` | `GET/PUT /notificaciones/preferencias`, `PUT /logros/pausa` |
 
 > **Diferencia entre documentos:** la HU-024 menciona el perfil VARK como insumo del Tutor, pero el diagrama y el RF-024 lo excluyen. Se implementa el diagrama: el Tutor se adapta **solo** al perfil de accesibilidad y al desempeño.
 
@@ -445,6 +466,9 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 | POST | `/notificaciones/{id}/posponer` | Pospone un recordatorio (RF-011) |
 | GET/POST | `/cursos/{id}/mensajes` · WS `/ws/cursos/{id}` | Chat y foro del curso (solo miembros) |
 | POST | `/mensajes/{id}/reportar` | Reporta contenido inapropiado y avisa al moderador (RF-010) |
+| GET/PUT | `/notificaciones/preferencias` | Incluye `resumenDiario` y `horaResumen`: lo no urgente se junta en un resumen diario (RF-047) |
+| GET/POST | `/contenidos/{id}/formatos` · `/contenidos/{id}/formatos/{tipo}` · GET `.../{tipo}/archivo` | Formatos alternativos MP3, EPUB, HTML accesible y BRF (RF-032; descarga auditada) |
+| GET | `/archivos/subtitulos/{id}.vtt` | Público: subtítulos aprobados para el reproductor y la transcripción sincronizada (RF-037, RF-038) |
 
 ### Estudiante
 
@@ -467,6 +491,8 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 | GET | `/progreso` · `/progreso/exportar?formato=PDF\|EXCEL` | Dashboard y exportación propia |
 | GET | `/logros` · `/cursos/{id}/ranking` | Puntos, nivel, insignias, ranking |
 | PUT | `/logros/privacidad` | Modo privado: ocultarse de la tabla pública (RF-009) |
+| PUT | `/logros/pausa` | Pausa los avisos de puntos, insignias y ranking sin perder puntos (RF-047) |
+| GET | `/contenidos/{id}/audio?velocidad=` | Lectura en voz alta en MP3, o ZIP con pistas numeradas si es larga (RF-036) |
 | POST | `/tutor/consultas` · `/tutor/respuestas/{id}/util` · GET `/tutor/historial` | Tutor de IA |
 
 ### Instructor
@@ -475,7 +501,9 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 |---|---|---|
 | GET/POST/PUT | `/instructor/cursos` | Sus cursos |
 | POST | `/instructor/cursos/{id}/modulos` · `/modulos/{id}/contenidos` | Estructura del curso |
-| POST | `/contenidos/{id}/recursos` | Recursos accesibles |
+| POST | `/contenidos/{id}/recursos` | Recursos accesibles (lengua de señas solo en videos o lecturas, con `desfaseMs`, RF-040) |
+| PATCH | `/recursos/{id}/desfase` | Ajusta el desfase del video del intérprete (RF-040) |
+| GET/POST/PUT | `/contenidos/{id}/subtitulos/borrador` · POST `.../aprobar` · POST `/contenidos/{id}/subtitulos/archivo` | Borrador de subtítulos automáticos: generar, corregir, subir .srt/.vtt y aprobar (RF-037) |
 | POST | `/contenidos/{id}/publicar` · `/instructor/cursos/{id}/publicar` | Publicación: ejecuta el verificador y responde 422 con los hallazgos bloqueantes (RF-019, RF-039, RF-049) |
 | GET/POST | `/contenidos/{id}/accesibilidad` · `/contenidos/{id}/accesibilidad/verificar` | Informe de accesibilidad del contenido y revisión en vivo del borrador (RF-049) |
 | GET/POST/DELETE | `/cursos/{cursoId}/acomodaciones` | Acomodaciones de evaluación por estudiante (RF-041; también administrador) |
@@ -605,7 +633,7 @@ Guarda cada imagen en `docs/img/` con el nombre indicado. Todos los prompts sigu
 - **Prompt:** *"UI mockup of a learning dashboard, 16:9. Fixed left sidebar 246px wide, very dark navy (#0B1022), logo 'V-Learning' with tagline 'Aprender a tu manera', ten white line-icon items with labels (Inicio, Mis cursos, Evaluaciones, Mi progreso, Logros, Comunidad, Tutor IA, Accesibilidad, Configuración, Cerrar sesión), the active item filled solid purple (#5B21B6) with a small 'ACTUAL' label. Top bar with breadcrumb, centered search box, bell icon with a red dot and a pill showing '1.240 pts'. Main area: a purple hero banner with decorative circles and the greeting 'Qué bueno verte, Camila', then a 3-column grid of course cards with 16:9 thumbnails, progress bars and percentages. Background #F8F9FC, flat clean UI, Spanish text, no real people."*
 
 **`docs/img/07-leccion.png`** · 16:9 · RF-005, RF-018, RF-019.
-- **Texto alternativo:** Lección con video, subtítulos y transcripción sincronizada.
+- **Texto alternativo:** Lección con video, subtítulos y transcripción sincronizada (RF-038: resalta la línea en curso, salta al momento de cada línea y se descarga en .txt o .srt).
 - **Descripción:** Reproductor con insignia "SUBTÍTULOS ACTIVADOS", controles completos; a la derecha la transcripción con un fragmento resaltado y "REPRODUCIENDO AHORA"; botón "Leer en voz alta", sección colapsable "Otros formatos de esta lección" y cuadro menta de atajos de teclado.
 - **Prompt:** *"UI mockup of an accessible lesson page, 16:9, inside an app shell with a dark navy left sidebar. Left: a video player with a lavender badge 'SUBTÍTULOS ACTIVADOS', burned-in subtitle text on the video, and a control bar (pause, volume, time, speed, captions, fullscreen). Right: a synchronized transcript list where the current fragment is highlighted lavender with a small label 'REPRODUCIENDO AHORA'. Below the video: a button 'Leer en voz alta', a collapsible 'Otros formatos de esta lección' with Lectura and Podcast, and a mint panel (#E8F5F0) listing keyboard shortcuts. Palette #5B21B6, #0B1022, #F8F9FC, flat clean UI, Spanish text, abstract video frame without real people."*
 
@@ -664,15 +692,18 @@ Guarda cada imagen en `docs/img/` con el nombre indicado. Todos los prompts sigu
 | Teclado | Todo operable con teclado; orden de tabulación: menú lateral → barra superior → contenido → panel del Tutor; enlace "Saltar al contenido principal". |
 | Foco visible | Halo doble lavanda `#C4B5FD`, también sobre el menú oscuro. |
 | Objetivos táctiles | Mínimo 44 × 44 px; ítems de menú de al menos 44 px. |
-| Lectores de pantalla | Regiones `nav`, `main`, `aside`; etiquetas accesibles en íconos; `aria-live` en chat y guardados. |
-| Texto y tipografía | Unidades `rem`; tamaños 100 / 125 / 150 %; interlineado 1.35 / 1.5 / 1.75; fuentes Atkinson, sistema o Dislexia (Lexend); líneas ≤ ~70 caracteres. |
-| Multimodal | Subtítulos, transcripción sincronizada, lectura en voz alta (Web Speech API), formatos alternativos y versión simplificada. |
+| Lectores de pantalla | Regiones `nav`, `main`, `aside`; etiquetas accesibles en íconos; `aria-live` en guardados. Los mensajes nuevos del chat y las notificaciones se anuncian («autor: texto») sin mover el foco; se pueden pausar las actualizaciones con contador de pendientes y desactivar los anuncios en el perfil (RF-034, 4.1.3 y 2.2.2). |
+| Texto y tipografía | Unidades `rem`; tamaños 100 / 125 / 150 %; interlineado 1.35 / 1.5 / 1.75; fuentes Atkinson, sistema, Lexend u OpenDyslexic (RF-035); opción de subrayar todos los enlaces (RF-035, 1.4.1); líneas ≤ ~70 caracteres. |
+| Multimodal | Subtítulos con borrador automático que el instructor revisa y aprueba (RF-037), transcripción sincronizada junto al video (RF-038), intérprete de lengua de señas sincronizado al lado del video (RF-040), lectura en voz alta (Web Speech API) y su descarga en MP3 (RF-036), formatos alternativos MP3, EPUB, HTML accesible y braille BRF (RF-032) y versión simplificada. |
+| Gráficos | Cada gráfico del dashboard tiene un resumen en texto y «Ver como tabla» con encabezados de fila y columna; el PDF exportado está etiquetado (RF-033, 1.1.1). |
+| Entrada | Dictado por voz en tareas, preguntas abiertas y chat; si el navegador no lo admite, se explica la causa (RF-045). |
+| Concentración | Modo lectura sin menús, puntos, ranking ni avisos (Esc para salir), activado por defecto en el perfil cognitivo (RF-046). Resumen diario de notificaciones no urgentes y pausa de la gamificación (RF-047, 2.2.4). |
 | Movimiento | Respeta `prefers-reduced-motion`. |
 | Tiempo | Tiempo adicional configurable en actividades cronometradas. Acomodaciones por estudiante (1,5x, 2x, ilimitado, fecha especial) calculadas en el servidor: se aplica el mayor entre perfil y acomodación (RF-041). Aviso a 2 minutos del fin de la sesión y de la evaluación, con ampliación (RF-042, 2.2.1). |
 | Autenticación accesible | Código OTP en un solo campo con `autocomplete="one-time-code"`, que admite pegar, error asociado al campo y «Reenviar código» (RF-044, 3.3.8). Desbloqueo por enlace al correo, sin depender del administrador (RF-043). |
 | Ayuda consistente | Botón «Ayuda» siempre en la misma posición de la barra superior: ayuda de la página, Tutor de IA y contacto con el instructor (RF-048, 3.2.6). |
 | Contenido accesible al publicar | Verificador del instructor: imagen sin texto alternativo, salto de encabezado, tabla sin encabezados, enlace no descriptivo, contraste en línea, video sin subtítulos o transcripción y audio sin transcripción (RF-049, RF-039). Los bloqueantes impiden publicar (422). |
-| Pruebas automáticas | `npm run test:a11y` (Playwright + axe-core, etiquetas `wcag2a`, `wcag2aa`, `wcag21aa`, `wcag22aa`) sobre 8 pantallas; falla con violaciones serias o críticas. |
+| Pruebas automáticas | `npm run test:a11y` (Playwright + axe-core, etiquetas `wcag2a`, `wcag2aa`, `wcag21aa`, `wcag22aa`) sobre las pantallas principales y los flujos de RF-032 a RF-049 (21 pruebas); falla con violaciones serias o críticas. |
 | Lenguaje | Errores que dicen qué pasó y qué hacer; aviso fijo de transparencia de IA. |
 | Preferencias | Se guardan en el servidor, se aplican en menos de 1 s, con vista previa y botón **Restablecer**. |
 

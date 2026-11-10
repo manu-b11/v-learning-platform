@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,8 +45,49 @@ public class NotificacionService {
     /** {@code enlace}: ruta de la aplicación a la que lleva el botón «Ir» de la notificación (o null). */
     @Transactional
     public Optional<Notificacion> notificar(Usuario usuario, String titulo, String mensaje, boolean obligatoria, String enlace) {
+        return notificar(usuario, titulo, mensaje, obligatoria, enlace, false);
+    }
+
+    /** RF-047: hora del resumen diario si la persona no eligió otra. */
+    public static final LocalTime HORA_RESUMEN_POR_DEFECTO = LocalTime.of(18, 0);
+
+    /** RF-047: próxima hora de resumen (hoy si aún no pasó; si no, mañana). */
+    public static LocalDateTime proximoResumen(LocalTime hora, LocalDateTime ahora) {
+        LocalTime h = hora == null ? HORA_RESUMEN_POR_DEFECTO : hora;
+        LocalDateTime hoy = ahora.toLocalDate().atTime(h);
+        return hoy.isAfter(ahora) ? hoy : hoy.plusDays(1);
+    }
+
+    /** RF-047: una fecha límite es urgente si vence en menos de 24 horas. */
+    public static boolean esUrgente(LocalDateTime fechaLimite, LocalDateTime ahora) {
+        return fechaLimite != null && fechaLimite.isBefore(ahora.plusHours(24));
+    }
+
+    /** RF-047: va al resumen si la persona lo activó y el aviso no es obligatorio ni urgente. */
+    public static boolean vaAlResumen(Usuario u, boolean obligatoria, boolean urgente) {
+        return Boolean.TRUE.equals(u.getResumenDiario()) && !obligatoria && !urgente;
+    }
+
+    /**
+     * RF-047: como notificar, pero indicando si el aviso es urgente. Lo no urgente de quien tiene
+     * el resumen diario se guarda pospuesto hasta la hora del resumen y no se envía por correo suelto.
+     */
+    @Transactional
+    public Optional<Notificacion> notificar(Usuario usuario, String titulo, String mensaje, boolean obligatoria,
+                                            String enlace, boolean urgente) {
         if (!usuario.isNotificacionesHabilitadas() && !obligatoria) {
             return Optional.empty();
+        }
+        if (vaAlResumen(usuario, obligatoria, urgente)) {
+            Notificacion n = new Notificacion();
+            n.setUsuario(usuario);
+            n.setTitulo(titulo);
+            n.setMensaje(mensaje);
+            n.setCanal(CanalNotificacion.PLATAFORMA);
+            n.setEnlace(enlace);
+            n.setEnResumen(true);
+            n.setPospuestaHasta(proximoResumen(usuario.getHoraResumen(), LocalDateTime.now()));
+            return Optional.of(notificaciones.save(n));
         }
         CanalNotificacion canal = usuario.getCanalPreferido();
         if (canal == CanalNotificacion.CORREO) {
@@ -59,6 +102,7 @@ public class NotificacionService {
         n.setMensaje(mensaje);
         n.setCanal(canal);
         n.setEnlace(enlace);
+        n.setUrgente(urgente || obligatoria);
         return Optional.of(notificaciones.save(n));
     }
 

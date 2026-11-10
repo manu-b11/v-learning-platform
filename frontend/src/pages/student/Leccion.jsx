@@ -3,8 +3,11 @@ import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   Check,
   ClipboardCheck,
+  Download,
+  FileDown,
   ExternalLink,
   Pause,
   Play,
@@ -17,6 +20,10 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useNotif } from "../../context/NotifContext.jsx";
 import { usePrefs } from "../../context/PrefsContext.jsx";
 import { useTutor } from "../../context/TutorContext.jsx";
+import { useModoLectura } from "../../context/ModoLecturaContext.jsx";
+import TranscripcionSincronizada from "../../components/TranscripcionSincronizada.jsx";
+import InterpreteSenas from "../../components/InterpreteSenas.jsx";
+import FormatosAlternativos from "../../components/FormatosAlternativos.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { useTexto } from "../../utils/useTexto.js";
 import { FORMATO_TEXTO } from "../../utils/format.js";
@@ -27,6 +34,7 @@ import {
   Button,
   Card,
   Cargando,
+  Dialogo,
   EstadoError,
   PageHeader,
   Pestanas,
@@ -148,10 +156,24 @@ function LeccionContenido() {
     [esEstudiante, c?.cursoId],
   );
   const [pestana, setPestana] = useState("contenido");
+  const [verFormatos, setVerFormatos] = useState(false); // RF-032
   const [avance, setAvance] = useState(null);
   const medio = useRef(null);
   const pendiente = useRef(0);
   const inicio = useRef(0);
+
+  // RF-046: modo lectura sin distracciones en los contenidos de lectura. Si el perfil lo pide
+  // (por defecto en el perfil cognitivo) se activa al abrir la lectura; al salir de ella se apaga.
+  const { activo: lectura, activar: activarLectura, salir: salirLectura } = useModoLectura();
+  const esLectura = Boolean(c && (c.formato === "LECTURA" || c.cuerpo));
+  const lecturaAutomatica = useRef(false);
+  useEffect(() => {
+    if (esLectura && config.modoLectura && !lecturaAutomatica.current) {
+      lecturaAutomatica.current = true;
+      activarLectura();
+    }
+  }, [esLectura, config.modoLectura, activarLectura]);
+  useEffect(() => () => salirLectura(), [salirLectura]);
 
   useEffect(() => {
     if (c) setContexto({ contenidoId: c.id, titulo: c.titulo, minuto: 0 });
@@ -204,6 +226,7 @@ function LeccionContenido() {
   const audio = recurso("AUDIO");
   const alt = recurso("TEXTO_ALTERNATIVO");
   const simple = recurso("VERSION_SIMPLIFICADA");
+  const senas = recurso("LENGUA_SENAS"); // RF-040
   const pct = Number(avance?.porcentaje ?? c.porcentaje ?? 0);
   const textoLeible = [c.cuerpo, trans?.descripcion].filter(Boolean).join(". ");
   const modulos = curso?.modulos ?? [];
@@ -256,13 +279,21 @@ function LeccionContenido() {
         titulo={c.titulo}
         subtitulo={c.descripcion}
         acciones={
-          config.textoAVoz || esEstudiante ? (
-            <ControlesVoz
-              texto={textoLeible || c.descripcion || c.titulo}
-              t={t}
-              avisar={avisar}
-            />
-          ) : null
+          <>
+            {esLectura && !lectura && (
+              <Button variante="secondary" icono={BookOpen} onClick={activarLectura}>
+                {t("Modo lectura")}
+              </Button>
+            )}
+            {config.textoAVoz || esEstudiante ? (
+              <ControlesVoz
+                texto={textoLeible || c.descripcion || c.titulo}
+                t={t}
+                avisar={avisar}
+                contenidoId={c.id}
+              />
+            ) : null}
+          </>
         }
       />
       {!esEstudiante && (
@@ -286,6 +317,15 @@ function LeccionContenido() {
           </Banner>
         )
       )}
+      {/* RF-032: descargar en otro formato (MP3, EPUB, HTML accesible, braille). */}
+      <p className="mb-3">
+        <Button variante="secondary" icono={FileDown} onClick={() => setVerFormatos(true)} aria-haspopup="dialog">
+          {t("Descargar en otro formato")}
+        </Button>
+      </p>
+      <Dialogo abierto={verFormatos} onCerrar={() => setVerFormatos(false)} titulo={t("Descargar en otro formato")}>
+        {verFormatos && <FormatosAlternativos contenidoId={c.id} />}
+      </Dialogo>
       {c.opcionesAlternativas?.length > 0 && (
         <p className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           {t("También disponible como:")}{" "}
@@ -318,6 +358,7 @@ function LeccionContenido() {
         {pestana === "contenido" && (
           <div className="grid gap-5">
             {c.formato === "VIDEO" && c.urlRecurso && (
+              <div className={subt || senas ? "grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" : undefined}>
               <video
                 ref={medio}
                 controls
@@ -337,6 +378,24 @@ function LeccionContenido() {
                 )}
                 {t("Tu navegador no puede reproducir este video.")}
               </video>
+              {/* RF-038: transcripción sincronizada (solo con subtítulos aprobados). */}
+              {(subt?.url || senas?.url) && (
+              <div className="grid content-start gap-4">
+              {/* RF-040: intérprete de lengua de señas al lado del video, sincronizado. */}
+              {senas?.url && <InterpreteSenas medio={medio} url={senas.url} desfaseMs={senas.desfaseMs ?? 0} />}
+              {subt?.url && (
+                <TranscripcionSincronizada medio={medio} urlVtt={subt.url} titulo={c.titulo}
+                  onSaltar={(s) => { if (medio.current) medio.current.currentTime = s; }}
+                  abiertaAlInicio={Boolean(config.transcripcion)} />
+              )}
+              </div>
+              )}
+              </div>
+            )}
+            {c.formato === "LECTURA" && senas?.url && (
+              <div className="max-w-md">
+                <InterpreteSenas url={senas.url} />
+              </div>
             )}
             {c.formato === "PODCAST" && (c.urlRecurso || audio) && (
               <audio
@@ -500,8 +559,21 @@ export default function Leccion() {
 }
 
 /** RF-018: lectura en voz alta con pausar/reanudar, retroceder una frase, velocidad y detener. */
-function ControlesVoz({ texto, t, avisar }) {
+function ControlesVoz({ texto, t, avisar, contenidoId }) {
   const voz = useLecturaVoz(texto);
+  // RF-036: descargar la lectura en MP3 con la velocidad elegida.
+  const [bajando, setBajando] = useState(false);
+  const descargarAudio = async () => {
+    setBajando(true);
+    try {
+      await api.contenidos.audio(contenidoId, voz.velocidad);
+      avisar(t("Descarga lista."), "ok");
+    } catch (e) {
+      avisar(mensajeError(e, t("No pudimos generar el audio. Intenta de nuevo.")), "error");
+    } finally {
+      setBajando(false);
+    }
+  };
   const activo = voz.estado !== "detenido";
   const empezar = () => {
     if (!voz.soportado) {
@@ -535,6 +607,11 @@ function ControlesVoz({ texto, t, avisar }) {
             {t("Detener")}
           </Button>
         </>
+      )}
+      {contenidoId && (
+        <Button variante="secondary" icono={Download} cargando={bajando} onClick={descargarAudio}>
+          {t("Descargar audio")}
+        </Button>
       )}
       <label className="flex flex-col text-sm font-bold text-strong">
         {t("Velocidad")}

@@ -128,6 +128,8 @@ export const api = {
   contenidos: {
     ver: (id) => d(client.get(`/contenidos/${id}`)),
     apoyo: (id) => d(client.get(`/contenidos/${id}/apoyo-cognitivo`)),
+    // RF-036: MP3 de la lectura en voz alta con la velocidad elegida
+    audio: (id, velocidad) => descargar(client.get(`/contenidos/${id}/audio`, { params: { velocidad }, responseType: "blob", timeout: 60000 }), "lectura.mp3"),
     progreso: (id, datos) => d(client.post(`/contenidos/${id}/progreso`, datos)),
   },
   evaluaciones: {
@@ -139,6 +141,12 @@ export const api = {
     ampliar: (intentoId) => d(client.post(`/intentos/${intentoId}/ampliar`)),
     resultado: (intentoId) => d(client.get(`/intentos/${intentoId}/resultado`)),
   },
+  // RF-032: formatos alternativos (MP3, EPUB, HTML accesible y BRF)
+  formatos: {
+    listar: (id) => d(client.get(`/contenidos/${id}/formatos`)),
+    solicitar: (id, tipo) => d(client.post(`/contenidos/${id}/formatos/${tipo}`)),
+    descargar: (id, tipo) => descargar(client.get(`/contenidos/${id}/formatos/${tipo}/archivo`, { responseType: "blob" }), "contenido"),
+  },
   progreso: {
     dashboard: () => d(client.get("/progreso")),
     exportar: (formato) => descargar(client.get("/progreso/exportar", { params: { formato }, responseType: "blob" }),
@@ -148,6 +156,7 @@ export const api = {
     ver: () => d(client.get("/logros")),
     actividad: (dias = 7) => d(client.get("/logros/actividad", { params: { dias } })),
     privacidad: (mostrarEnRanking) => d(client.put("/logros/privacidad", { mostrarEnRanking })),
+    pausa: (pausada) => d(client.put("/logros/pausa", { pausada })), // RF-047
     ranking: (cursoId) => d(client.get(`/cursos/${cursoId}/ranking`)),
   },
   chat: {
@@ -167,7 +176,8 @@ export const api = {
     leerTodas: () => d(client.patch("/notificaciones/leidas")),
     posponer: (id, opcion) => d(client.post(`/notificaciones/${id}/posponer`, { opcion })),
     preferencias: () => d(client.get("/notificaciones/preferencias")),
-    guardarPreferencias: (habilitadas, canal) => d(client.put("/notificaciones/preferencias", { habilitadas, canal })),
+    guardarPreferencias: (habilitadas, canal, resumenDiario, horaResumen) =>
+      d(client.put("/notificaciones/preferencias", { habilitadas, canal, resumenDiario, horaResumen })),
   },
   tutor: {
     consultar: (pregunta, contenidoId) => d(client.post("/tutor/consultas", { pregunta, contenidoId })),
@@ -194,6 +204,17 @@ export const api = {
     recursos: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/recursos`)),
     crearRecurso: (contenidoId, datos) => d(client.post(`/contenidos/${contenidoId}/recursos`, datos)),
     borrarRecurso: (id) => d(client.delete(`/recursos/${id}`)),
+    desfaseRecurso: (id, desfaseMs) => d(client.patch(`/recursos/${id}/desfase`, { desfaseMs })), // RF-040
+    // RF-037: borrador de subtítulos automáticos
+    subtitulos: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/subtitulos/borrador`)),
+    generarSubtitulos: (contenidoId) => d(client.post(`/contenidos/${contenidoId}/subtitulos/borrador`)),
+    editarSubtitulos: (contenidoId, lineas) => d(client.put(`/contenidos/${contenidoId}/subtitulos/borrador`, { lineas })),
+    aprobarSubtitulos: (contenidoId) => d(client.post(`/contenidos/${contenidoId}/subtitulos/borrador/aprobar`)),
+    subirSubtitulos: (contenidoId, archivo) => {
+      const datos = new FormData();
+      datos.append("archivo", archivo);
+      return d(client.post(`/contenidos/${contenidoId}/subtitulos/archivo`, datos));
+    },
     conformidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/conformidad`)),
     // RF-049: verificador de accesibilidad del contenido
     accesibilidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/accesibilidad`)),

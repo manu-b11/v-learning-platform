@@ -23,6 +23,7 @@ const FUENTES = [
   "Poppins + Inter",
   "Atkinson Hyperlegible Next",
   "Lexend",
+  "OpenDyslexic",
   "Arial",
   "Verdana",
 ];
@@ -225,6 +226,18 @@ export default function Accesibilidad({ embebido = false }) {
             )}
             <div className="divide-y divide-line">
               <Toggle
+                label={t("Anunciar mensajes y notificaciones")}
+                descripcion={t("El lector de pantalla lee los mensajes nuevos del chat y las notificaciones sin mover el foco.")}
+                checked={config.anunciarMensajes !== false}
+                onChange={(v) => actualizar({ anunciarMensajes: v })}
+              />
+              <Toggle
+                label={t("Subrayar enlaces")}
+                descripcion={t("Todos los enlaces se ven subrayados, sin depender del color.")}
+                checked={Boolean(config.subrayarEnlaces)}
+                onChange={(v) => actualizar({ subrayarEnlaces: v })}
+              />
+              <Toggle
                 label={t("Alto contraste")}
                 descripcion={t("Colores con más contraste.", "Colores más fuertes para ver mejor.")}
                 checked={config.altoContraste}
@@ -259,6 +272,12 @@ export default function Accesibilidad({ embebido = false }) {
                     label={t("Transcripciones")}
                     checked={config.transcripcion}
                     onChange={(v) => actualizar({ transcripcion: v })}
+                  />
+                  <Toggle
+                    label={t("Abrir las lecturas en modo lectura")}
+                    descripcion={t("Oculta menús, puntos, ranking y avisos mientras lees. Sales con Esc.")}
+                    checked={Boolean(config.modoLectura)}
+                    onChange={(v) => actualizar({ modoLectura: v })}
                   />
                   <Toggle
                     label={t("Lectura en voz alta")}

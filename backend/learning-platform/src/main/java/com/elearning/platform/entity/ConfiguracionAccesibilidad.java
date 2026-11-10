@@ -53,6 +53,18 @@ public class ConfiguracionAccesibilidad {
     @Column(name = "tiempo_adicional", nullable = false)
     private Integer tiempoAdicional = 0;
 
+    /** RF-035: subrayar todos los enlaces para no depender del color (WCAG 1.4.1). */
+    @Column(name = "subrayar_enlaces", nullable = false)
+    private boolean subrayarEnlaces = false;
+
+    /** RF-046: abrir las lecturas en modo lectura sin distracciones. */
+    @Column(name = "modo_lectura_predeterminado", nullable = false)
+    private boolean modoLectura = false;
+
+    /** RF-034: anunciar mensajes y notificaciones nuevas al lector de pantalla. */
+    @Column(name = "anunciar_mensajes", nullable = false)
+    private boolean anunciarMensajes = true;
+
     @Column(name = "fecha_configuracion", nullable = false)
     private LocalDateTime fechaConfiguracion;
 

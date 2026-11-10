@@ -35,4 +35,8 @@ public class RecursoAccesible {
 
     @Column(nullable = false)
     private boolean disponible = true;
+
+    /** RF-040: desfase del video de lengua de señas respecto al original, en milisegundos. */
+    @Column(name = "desfase_ms", nullable = false)
+    private Integer desfaseMs = 0;
 }

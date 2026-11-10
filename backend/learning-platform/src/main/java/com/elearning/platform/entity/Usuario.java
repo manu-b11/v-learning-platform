@@ -56,6 +56,14 @@ public abstract class Usuario {
     @Column(name = "canal_preferido", nullable = false, length = 50)
     private CanalNotificacion canalPreferido = CanalNotificacion.PLATAFORMA;
 
+    /** RF-047: resumen diario de notificaciones no urgentes (null = aún no lo eligió). */
+    @Column(name = "resumen_diario")
+    private Boolean resumenDiario;
+
+    /** RF-047: hora del resumen diario. */
+    @Column(name = "hora_resumen")
+    private java.time.LocalTime horaResumen;
+
     /** Preferencia de segundo factor. Solo tiene efecto en estudiantes; el resto siempre lo usa. */
     @Column(name = "doble_factor_habilitado", nullable = false)
     private boolean dobleFactorHabilitado = true;

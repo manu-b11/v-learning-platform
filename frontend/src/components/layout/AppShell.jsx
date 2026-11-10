@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useTutor } from "../../context/TutorContext.jsx";
+import { useModoLectura } from "../../context/ModoLecturaContext.jsx";
+import { BookOpen } from "lucide-react";
+import { Button } from "../ui/index.jsx";
 import { api } from "../../api/client.js";
 import { useAsync } from "../../utils/useAsync.js";
 import { Sidebar } from "./Sidebar.jsx";
@@ -23,7 +26,8 @@ export function AppShell() {
   const principal = useRef(null);
   const { pathname } = useLocation();
   const esEstudiante = usuario.rol === "ESTUDIANTE";
-  const conPanel = esEstudiante && !tutorAbierto;
+  const { activo: lectura, salir: salirLectura } = useModoLectura();
+  const conPanel = esEstudiante && !tutorAbierto && !lectura;
 
   // Datos del perfil: se cargan una vez y se mantienen al navegar entre secciones.
   const { datos: dashboard } = useAsync(
@@ -80,17 +84,29 @@ export function AppShell() {
       >
         Saltar al contenido principal
       </a>
-      <Sidebar abierto={menu} onCerrar={() => setMenu(false)} />
-      <div className="md:pl-[72px] 2xl:pl-[80px]">
+      {/* RF-046: en modo lectura se ocultan el menú, la barra superior (puntos y ranking), el
+          perfil y el Tutor; el contenido sigue en el mismo lugar del árbol para no recargarse. */}
+      {!lectura && <Sidebar abierto={menu} onCerrar={() => setMenu(false)} />}
+      <div className={lectura ? "" : "md:pl-[72px] 2xl:pl-[80px]"}>
         <div className="flex flex-col xl:flex-row">
           <div className="min-w-0 xl:flex-1">
-            <Topbar
-              onMenu={() => setMenu(true)}
-              buscadorRef={buscador}
-              perfilEnPanel={conPanel}
-              perfilAbierto={perfilAbierto}
-              onAbrirPerfil={() => setPerfilAbierto(true)}
-            />
+            {lectura ? (
+              <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 md:px-8">
+                <p className="flex items-center gap-2 font-bold text-strong">
+                  <BookOpen size={20} aria-hidden="true" />Modo lectura
+                  <span className="text-sm font-normal text-muted">(Esc para salir)</span>
+                </p>
+                <Button variante="secondary" onClick={salirLectura}>Salir del modo lectura</Button>
+              </div>
+            ) : (
+              <Topbar
+                onMenu={() => setMenu(true)}
+                buscadorRef={buscador}
+                perfilEnPanel={conPanel}
+                perfilAbierto={perfilAbierto}
+                onAbrirPerfil={() => setPerfilAbierto(true)}
+              />
+            )}
             <div className="flex">
               <main
                 id="contenido"
@@ -98,11 +114,11 @@ export function AppShell() {
                 tabIndex={-1}
                 className="min-w-0 flex-1 px-4 py-6 outline-none! shadow-none! rounded-none! md:px-8 md:py-8"
               >
-                <div className="mx-auto max-w-[73.75rem]">
+                <div className={cx("mx-auto", lectura ? "max-w-[44rem]" : "max-w-[73.75rem]")}>
                   <Outlet />
                 </div>
               </main>
-              {esEstudiante && tutorAbierto && (
+              {esEstudiante && tutorAbierto && !lectura && (
                 <div
                   className={cx(
                     "fixed inset-0 z-[55] bg-white xl:sticky xl:inset-auto xl:top-[70px] xl:z-20 xl:h-[calc(100vh-70px)] xl:w-[420px] xl:shrink-0 xl:border-l xl:border-line",
@@ -132,7 +148,7 @@ export function AppShell() {
           )}
         </div>
       </div>
-      {esEstudiante && (
+      {esEstudiante && !lectura && (
         <TutorFlotante conPanel={conPanel && perfilAbierto} />
       )}
       <ShortcutsDialog abierto={atajos} onCerrar={() => setAtajos(false)} />

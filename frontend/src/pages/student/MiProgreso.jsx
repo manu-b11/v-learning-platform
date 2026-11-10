@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Table2 } from "lucide-react";
 import { api, mensajeError } from "../../api/client.js";
 import { useNotif } from "../../context/NotifContext.jsx";
 import { useAsync } from "../../utils/useAsync.js";
@@ -10,12 +10,17 @@ import VolverACursos from "../../components/VolverACursos.jsx";
 
 const TONO = { EXCELENTE: "ok", ACEPTABLE: "warn", INSUFICIENTE: "err" };
 
-/** RF-006: dashboard de progreso. Cada gráfica tiene su tabla equivalente. */
+/**
+ * RF-006: dashboard de progreso. RF-033: cada gráfico tiene un resumen en texto (calculado en el
+ * servidor) y un botón «Ver como tabla» con los mismos datos; las series se distinguen por su
+ * etiqueta y su valor en texto, no solo por el color.
+ */
 export default function MiProgreso() {
   const t = useTexto();
   const { avisar } = useNotif();
   const { datos: d, cargando, error, recargar } = useAsync(() => api.progreso.dashboard(), []);
   const [bajando, setBajando] = useState(null);
+  const [verTabla, setVerTabla] = useState(false);
   if (cargando && !d) return <Cargando texto={t("Cargando tu progreso…", "Cargando tu avance…")} />;
   if (error && !d) return <EstadoError mensaje={error} onReintentar={recargar} />;
 
@@ -43,8 +48,9 @@ export default function MiProgreso() {
             ))}
           </dl>
           <section aria-labelledby="cp" className="mb-6">
-            <h2 id="cp" className="mb-3 text-xl">{t("Avance por curso", "Progreso por curso")}</h2>
-            <ul className="mb-4 grid gap-3">
+            <h2 id="cp" className="mb-2 text-xl">{t("Avance por curso", "Progreso por curso")}</h2>
+            {d.resumenes?.avance && <p id="cp-resumen" className="mb-3">{d.resumenes.avance}</p>}
+            <ul className="mb-4 grid gap-3" aria-describedby={d.resumenes?.avance ? "cp-resumen" : undefined}>
               {d.cursos.map((c) => (
                 <Card as="li" key={c.cursoId} className="list-none">
                   <p className="mb-2 font-bold text-strong">{c.titulo}</p>
@@ -52,7 +58,11 @@ export default function MiProgreso() {
                 </Card>
               ))}
             </ul>
-            <div className="overflow-x-auto rounded-card border border-line bg-surface">
+            <Button variante="secondary" icono={Table2} aria-expanded={verTabla} aria-controls="tabla-avance"
+              onClick={() => setVerTabla((v) => !v)} className="mb-3">
+              {verTabla ? t("Ocultar tabla") : t("Ver como tabla")}
+            </Button>
+            <div id="tabla-avance" hidden={!verTabla} className="overflow-x-auto rounded-card border border-line bg-surface">
               <table className="w-full min-w-[620px] text-left">
                 <caption className="sr-only">{t("Detalle del avance por curso")}</caption>
                 <thead className="bg-subtle text-sm"><tr><th scope="col" className="p-3">Curso</th><th scope="col" className="p-3">{t("Avance", "Progreso")}</th><th scope="col" className="p-3">{t("Módulos", "Partes")}</th><th scope="col" className="p-3">{t("Contenidos", "Lecciones")}</th><th scope="col" className="p-3">Tiempo</th></tr></thead>
@@ -64,7 +74,8 @@ export default function MiProgreso() {
             </div>
           </section>
           <section aria-labelledby="cal">
-            <h2 id="cal" className="mb-3 text-xl">{t("Calificaciones", "Notas")}</h2>
+            <h2 id="cal" className="mb-2 text-xl">{t("Calificaciones", "Notas")}</h2>
+            {d.resumenes?.calificaciones && d.calificaciones.length > 0 && <p className="mb-3">{d.resumenes.calificaciones}</p>}
             {d.calificaciones.length === 0 ? <p>{t("Aún no has presentado evaluaciones ni tienes tareas calificadas.")}</p> : (
               <div className="overflow-x-auto rounded-card border border-line bg-surface">
                 <table className="w-full min-w-[620px] text-left">

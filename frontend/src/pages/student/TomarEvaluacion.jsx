@@ -6,12 +6,19 @@ import { fmtCronometro } from "../../utils/format.js";
 import { useTexto } from "../../utils/useTexto.js";
 import { Banner, Button, Cargando, Checkbox, EstadoError, OpcionCard, ProgressBar, TextField } from "../../components/ui/index.jsx";
 import ConfirmarDialogo from "../../components/ConfirmarDialogo.jsx";
+import BotonDictado from "../../components/BotonDictado.jsx";
 
 function Pregunta({ p, valor, onCambio }) {
   const t = useTexto();
   const sel = new Set((valor ?? "").split(",").filter(Boolean));
   if (p.tipo === "ABIERTA") {
-    return <TextField multilinea label={t("Tu respuesta")} maxLength={2000} value={valor ?? ""} onChange={(e) => onCambio(e.target.value)} />;
+    return (
+      <>
+        <TextField multilinea label={t("Tu respuesta")} maxLength={2000} value={valor ?? ""} onChange={(e) => onCambio(e.target.value)} />
+        {/* RF-045: dictar la respuesta por voz */}
+        <BotonDictado valor={valor ?? ""} onCambio={onCambio} campo={t("en tu respuesta")} />
+      </>
+    );
   }
   if (p.tipo === "SELECCION_MULTIPLE") {
     return (

@@ -112,6 +112,15 @@ public class InstructorCursoController {
         return servicio.agregarRecurso(id, u.id(), req, IpUtil.de(http));
     }
 
+    /** RF-040: ajustar el desfase del video de lengua de señas. */
+    @io.swagger.v3.oas.annotations.Operation(summary = "Ajustar el desfase del video de lengua de señas (RF-040)",
+            description = "desfaseMs positivo adelanta al intérprete; negativo lo atrasa. Máximo ±600.000 ms.")
+    @PatchMapping("/recursos/{id}/desfase")
+    public RecursoRespuesta desfase(@AuthenticationPrincipal UsuarioPrincipal u, @PathVariable Long id,
+                                    @Valid @RequestBody DesfaseRequest req, HttpServletRequest http) {
+        return servicio.ajustarDesfase(id, u.id(), req.desfaseMs(), IpUtil.de(http));
+    }
+
     @DeleteMapping("/recursos/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminarRecurso(@AuthenticationPrincipal UsuarioPrincipal u, @PathVariable Long id,

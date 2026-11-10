@@ -10,6 +10,8 @@ import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfName;
+import com.lowagie.text.pdf.PdfString;
 import com.lowagie.text.pdf.PdfWriter;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -71,7 +73,11 @@ public final class ExportadorInforme {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Document doc = new Document(PageSize.A4.rotate(), 36, 36, 36, 36);
         try {
-            PdfWriter.getInstance(doc, out);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
+            // RF-033: PDF etiquetado (estructura lógica), con idioma y título visibles para lectores de pantalla.
+            writer.setTagged();
+            writer.setViewerPreferences(PdfWriter.DisplayDocTitle);
+            writer.getExtraCatalog().put(PdfName.LANG, new PdfString("es-CO"));
             doc.addTitle(t.titulo());
             doc.open();
             Font fTitulo = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);

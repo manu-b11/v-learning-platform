@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { CheckCircle2, CircleAlert, Info, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "./AuthContext.jsx";
+import { useModoLectura } from "./ModoLecturaContext.jsx";
+import { usePrefs } from "./PrefsContext.jsx";
 import { reproducirAviso, sonidoActivado } from "../utils/sonido.js";
 
 const NotifContext = createContext(null);
@@ -24,14 +26,40 @@ export function NotifProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const vistas = useRef(null);
   const contador = useRef(0);
+  // RF-046: en modo lectura las notificaciones (salvo los errores de la propia acción) se guardan
+  // y se muestran al salir.
+  const { activo: enLectura } = useModoLectura();
+  const enLecturaRef = useRef(enLectura);
+  const enEspera = useRef([]);
+  // RF-034: con los anuncios desactivados solo se actualiza el contador de la campana.
+  const { config: prefs } = usePrefs();
+  const anunciarRef = useRef(true);
+  useEffect(() => { anunciarRef.current = prefs?.anunciarMensajes !== false; }, [prefs?.anunciarMensajes]);
 
   const avisar = useCallback((mensaje, tipo = "info") => {
+    if (enLecturaRef.current && tipo !== "error") {
+      enEspera.current.push({ mensaje, tipo });
+      return;
+    }
     const id = ++contador.current;
     setToasts((t) => [...t, { id, mensaje, tipo }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tipo === "error" ? 9000 : 6000);
   }, []);
 
   const cerrarToast = (id) => setToasts((t) => t.filter((x) => x.id !== id));
+
+  useEffect(() => {
+    enLecturaRef.current = enLectura;
+    if (!enLectura && enEspera.current.length > 0) {
+      const pendientes = enEspera.current;
+      enEspera.current = [];
+      if (pendientes.length > 3) {
+        avisar(`Recibiste ${pendientes.length} avisos mientras leías. Revísalos en la campana de notificaciones.`, "info");
+      } else {
+        pendientes.forEach((p) => avisar(p.mensaje, p.tipo));
+      }
+    }
+  }, [enLectura, avisar]);
 
   const recargar = useCallback(async () => {
     if (!usuario || usuario.primerAcceso) return;
@@ -45,7 +73,7 @@ export function NotifProvider({ children }) {
         const nuevas = r.notificaciones.filter((n) => !n.leida && !vistas.current.has(n.id));
         nuevas.forEach((n) => {
           vistas.current.add(n.id);
-          avisar(`${n.titulo}: ${n.mensaje}`, "info");
+          if (anunciarRef.current) avisar(`${n.titulo}: ${n.mensaje}`, "info");
         });
         if (nuevas.length > 0 && sonidoActivado()) reproducirAviso();
       }

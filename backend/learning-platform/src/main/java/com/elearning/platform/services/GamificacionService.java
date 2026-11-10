@@ -58,9 +58,11 @@ public class GamificacionService {
         p.setNivel(EventosGamificacion.nivelPara(p.getPuntos()));
         perfiles.save(p);
         historial.save(new HistorialPuntos(estudianteId, puntos, motivo));
-        notificaciones.notificar(estudianteId, "Ganaste " + puntos + " puntos", motivo, false, "/logros");
+        // RF-047: con la gamificación en pausa los puntos se registran, pero no se avisan.
+        boolean avisar = !p.isAvisosPausados();
+        if (avisar) notificaciones.notificar(estudianteId, "Ganaste " + puntos + " puntos", motivo, false, "/logros");
 
-        if (p.getNivel() > nivelAntes) {
+        if (p.getNivel() > nivelAntes && avisar) {
             notificaciones.notificar(estudianteId, "¡Subiste al nivel " + p.getNivel() + "!",
                     "Llevas " + p.getPuntos() + " puntos. Sigue así.", false, "/logros");
         }
@@ -72,7 +74,7 @@ public class GamificacionService {
                 o.setPerfilGamificacionId(p.getId());
                 o.setInsigniaId(ins.getId());
                 obtenidas.save(o);
-                notificaciones.notificar(estudianteId, "Nueva insignia: " + ins.getNombre(),
+                if (avisar) notificaciones.notificar(estudianteId, "Nueva insignia: " + ins.getNombre(),
                         ins.getDescripcion() == null ? "Desbloqueaste una insignia." : ins.getDescripcion(), false, "/logros");
             }
         }
@@ -99,7 +101,8 @@ public class GamificacionService {
         int siguiente = p.getNivel() * EventosGamificacion.PUNTOS_POR_NIVEL;
         int dentroDelNivel = p.getPuntos() - (p.getNivel() - 1) * EventosGamificacion.PUNTOS_POR_NIVEL;
         int pct = Math.min(100, Math.max(0, dentroDelNivel * 100 / EventosGamificacion.PUNTOS_POR_NIVEL));
-        return new LogrosRespuesta(p.getPuntos(), p.getNivel(), siguiente, pct, p.isVisibleRanking(), obt, pend);
+        return new LogrosRespuesta(p.getPuntos(), p.getNivel(), siguiente, pct, p.isVisibleRanking(), obt, pend,
+                p.isAvisosPausados());
     }
 
     /**
@@ -137,6 +140,15 @@ public class GamificacionService {
             case SATURDAY -> "S";
             case SUNDAY -> "D";
         };
+    }
+
+    /** RF-047: pausa o reanuda los avisos de puntos, insignias y ranking (los puntos se siguen sumando). */
+    @Transactional
+    public LogrosRespuesta pausarAvisos(Long estudianteId, boolean pausada) {
+        PerfilGamificacion p = perfilDe(estudianteId);
+        p.setAvisosPausados(pausada);
+        perfiles.save(p);
+        return logros(estudianteId);
     }
 
     /** Modo privado: el estudiante conserva puntos y nivel pero no figura en la tabla pública. */

@@ -41,6 +41,7 @@ public class InformeService {
     private final UsuarioRepository usuarios;
     private final AuditoriaService auditoria;
     private final ObjectMapper mapper;
+    private final DashboardService dashboard;
 
     // ------------------------------------------------------------------ vista y exportación
 
@@ -66,6 +67,12 @@ public class InformeService {
     public ArchivoGenerado exportarProgresoPropio(UsuarioPrincipal u, FormatoInforme formato, String ip) {
         TablaInforme t = tablaEstudiante(u.id(), u.nombre());
         if (t.sinDatos()) throw ApiException.noEncontrado("Aún no tienes cursos para exportar.");
+        // RF-033: el PDF incluye, además de la tabla, el resumen en texto de cada gráfico.
+        var resumenes = dashboard.dashboard(u.id()).resumenes();
+        List<String> contexto = new ArrayList<>(t.contexto());
+        contexto.add("Resumen del avance: " + resumenes.avance());
+        contexto.add("Resumen de calificaciones: " + resumenes.calificaciones());
+        t = new TablaInforme(t.titulo(), contexto, t.columnas(), t.filas(), t.notas());
         ArchivoGenerado archivo = renderizar(t, formato, "mi-progreso");
         guardar(u, new InformeRequest(formato, u.id(), null, null, null, null));
         auditoria.registrar(u.id(), "PROGRESO_EXPORTADO", "progreso/" + formato, ResultadoAuditoria.PERMITIDO, ip);

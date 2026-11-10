@@ -44,6 +44,14 @@ public class LogrosController {
         return gamificacion.cambiarPrivacidad(u.id(), req.mostrarEnRanking());
     }
 
+    /** RF-047: pausar los avisos de gamificación sin perder los puntos. */
+    @io.swagger.v3.oas.annotations.Operation(summary = "Pausar o reanudar los avisos de gamificación (RF-047)",
+            description = "Con la pausa activa no se avisan puntos, niveles ni insignias y se oculta el ranking; los puntos se siguen registrando.")
+    @PutMapping("/logros/pausa")
+    public LogrosRespuesta pausa(@AuthenticationPrincipal UsuarioPrincipal u, @Valid @RequestBody PausaGamificacionRequest req) {
+        return gamificacion.pausarAvisos(u.id(), req.pausada());
+    }
+
     @GetMapping("/cursos/{id}/ranking")
     public RankingRespuesta ranking(@AuthenticationPrincipal UsuarioPrincipal u, @PathVariable Long id) {
         return ranking.obtener(id, u.id());

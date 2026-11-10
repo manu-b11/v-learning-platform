@@ -29,5 +29,9 @@ public final class DashboardDtos {
 
     public record DashboardRespuesta(boolean sinActividad, String mensaje, Totales totales, List<CursoProgreso> cursos,
                                      List<Calificacion> calificaciones, List<Pendiente> pendientes,
-                                     List<Sugerencia> sugerencias, List<CursoResumen> cursosSugeridos) {}
+                                     List<Sugerencia> sugerencias, List<CursoResumen> cursosSugeridos,
+                                     ResumenesProgreso resumenes) {}
+
+    /** RF-033: alternativa textual de cada gráfico del dashboard. */
+    public record ResumenesProgreso(String avance, String calificaciones) {}
 }

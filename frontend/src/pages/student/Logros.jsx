@@ -52,6 +52,14 @@ export default function Logros() {
     try { await api.logros.privacidad(v); setDatos((x) => ({ ...x, mostrarEnRanking: v })); avisar(v ? t("Apareces en la clasificación.", "Ya sales en la tabla de posiciones.") : t("Ya no apareces en la clasificación.", "Ya no sales en la tabla de posiciones."), "ok"); }
     catch (e) { avisar(mensajeError(e), "error"); }
   };
+  // RF-047: pausar los avisos de gamificación (los puntos se siguen sumando).
+  const pausar = async (v) => {
+    try {
+      setDatos(await api.logros.pausa(v));
+      window.dispatchEvent(new Event("vl:puntos"));
+      avisar(v ? t("Gamificación en pausa.") : t("Gamificación reanudada."), "ok");
+    } catch (e) { avisar(mensajeError(e), "error"); }
+  };
 
   return (
     <>
@@ -87,8 +95,12 @@ export default function Logros() {
       )}
       <Card className="mt-6 max-w-2xl">
         <Toggle label={t("Aparecer en la clasificación")} descripcion={t("Si lo desactivas, otros estudiantes no verán tu nombre.")} checked={l.mostrarEnRanking} onChange={privacidad} />
+        <Toggle label={t("Pausar la gamificación")} descripcion={t("Deja de avisarte de puntos, insignias y ranking mientras estudias. Tus puntos se siguen sumando.")}
+          checked={Boolean(l.avisosPausados)} onChange={pausar} />
       </Card>
-      <Ranking cursos={cursos.datos ?? []} />
+      {l.avisosPausados
+        ? <Banner tono="info">{t("La gamificación está en pausa: no te mostramos el ranking ni avisos de puntos. Tus puntos se siguen sumando.")}</Banner>
+        : <Ranking cursos={cursos.datos ?? []} />}
     </>
   );
 }

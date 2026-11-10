@@ -20,7 +20,10 @@ public final class NotificacionDtos {
     /** Opciones: "1_DIA", "3_DIAS", "1_SEMANA". */
     public record PosponerRequest(@NotNull(message = "Elige por cuánto tiempo posponer.") String opcion) {}
 
-    public record PreferenciasRequest(@NotNull Boolean habilitadas, CanalNotificacion canal) {}
+    /** resumenDiario y horaResumen (RF-047) son opcionales: si no llegan, no se cambian. */
+    public record PreferenciasRequest(@NotNull Boolean habilitadas, CanalNotificacion canal,
+                                      Boolean resumenDiario, java.time.LocalTime horaResumen) {}
 
-    public record PreferenciasDto(boolean habilitadas, CanalNotificacion canal) {}
+    public record PreferenciasDto(boolean habilitadas, CanalNotificacion canal, boolean resumenDiario,
+                                  java.time.LocalTime horaResumen) {}
 }

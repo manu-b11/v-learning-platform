@@ -5,10 +5,11 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { Check, Clock, Flag, Send, Trash2, Wifi, WifiOff } from "lucide-react";
+import { Check, Clock, Flag, Pause, Play, Send, Trash2, Wifi, WifiOff } from "lucide-react";
 import { api, mensajeError, token } from "../../api/client.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useNotif } from "../../context/NotifContext.jsx";
+import { usePrefs } from "../../context/PrefsContext.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { ROL_TEXTO, fmtFecha, fmtHora, fmtDia } from "../../utils/format.js";
 import {
@@ -27,6 +28,7 @@ import {
 } from "../../components/ui/index.jsx";
 import ConfirmarDialogo from "../../components/ConfirmarDialogo.jsx";
 import VolverACursos from "../../components/VolverACursos.jsx";
+import BotonDictado from "../../components/BotonDictado.jsx";
 
 function cursosDelRol(rol) {
   if (rol === "ESTUDIANTE") return api.cursos.mios();
@@ -75,6 +77,19 @@ function Sala({ curso, onModerado }) {
   const [aviso, setAviso] = useState(null);
   const [aEliminar, setAEliminar] = useState(null);
   const fin = useRef(null);
+  // RF-034: anuncio de mensajes nuevos sin mover el foco, pausa con contador y preferencia del perfil.
+  const { config: prefs } = usePrefs();
+  const anunciar = prefs?.anunciarMensajes !== false;
+  const anunciarRef = useRef(anunciar);
+  const [anuncio, setAnuncio] = useState(null);
+  const [pausado, setPausado] = useState(false);
+  const pausadoRef = useRef(false);
+  const enPausa = useRef([]);
+  const [pendientes, setPendientes] = useState(0);
+  useEffect(() => { anunciarRef.current = anunciar; }, [anunciar]);
+  const anunciarTexto = useCallback((texto) => {
+    if (anunciarRef.current) setAnuncio({ id: Date.now() + Math.random(), texto });
+  }, []);
   const puedeModerar = usuario.rol !== "ESTUDIANTE";
   // RF-010: cola de reenvío. El instructor decide si está activa en su curso.
   const claveCola = `vl.chat.cola.${usuario.id}.${curso}`;
@@ -200,9 +215,15 @@ function Sala({ curso, onModerado }) {
         try {
           const d = JSON.parse(ev.data);
           if (d.tipo === "MENSAJE") {
-            agregar(d.mensaje);
-            if (d.mensaje.usuarioId !== usuario.id)
-              setAviso(`Nuevo mensaje de ${d.mensaje.autor}.`);
+            const ajeno = d.mensaje.usuarioId !== usuario.id;
+            if (ajeno && pausadoRef.current) {
+              // RF-034: en pausa no se insertan mensajes; se cuentan y se muestran al reanudar.
+              enPausa.current.push(d.mensaje);
+              setPendientes(enPausa.current.length);
+            } else {
+              agregar(d.mensaje);
+              if (ajeno) anunciarTexto(d.mensaje.textoPlano ?? `${d.mensaje.autor}: ${d.mensaje.contenido}`);
+            }
           }
           if (d.tipo === "ERROR") setAviso(d.mensaje);
         } catch {
@@ -216,7 +237,22 @@ function Sala({ curso, onModerado }) {
       clearTimeout(reintento);
       ws?.close();
     };
-  }, [curso, usuario.id, agregar, vaciarCola]);
+  }, [curso, usuario.id, agregar, vaciarCola, anunciarTexto]);
+
+  const cambiarPausa = () => {
+    if (!pausadoRef.current) {
+      pausadoRef.current = true;
+      setPausado(true);
+      return;
+    }
+    pausadoRef.current = false;
+    setPausado(false);
+    const lista = enPausa.current;
+    enPausa.current = [];
+    setPendientes(0);
+    lista.forEach((m) => agregar(m));
+    if (lista.length > 0) anunciarTexto(`Se mostraron ${lista.length} mensaje(s) que llegaron en pausa.`);
+  };
 
   useEffect(() => {
     fin.current?.scrollIntoView({ block: "end" });
@@ -312,12 +348,27 @@ function Sala({ curso, onModerado }) {
           </>
         )}
       </p>
+      {/* RF-034: pausar las actualizaciones automáticas (WCAG 2.2.2) y contador de pendientes. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variante="secondary" icono={pausado ? Play : Pause} aria-pressed={pausado} onClick={cambiarPausa}>
+          {pausado ? "Reanudar actualizaciones" : "Pausar actualizaciones"}
+        </Button>
+        {pausado && (
+          <p className="text-sm font-bold text-strong">
+            {pendientes === 0 ? "En pausa: no hay mensajes nuevos." : `En pausa: ${pendientes} mensaje(s) nuevo(s) sin mostrar.`}
+          </p>
+        )}
+      </div>
+      {/* RF-034: anuncio de cada mensaje nuevo («autor: texto») sin mover el foco. */}
+      <div className="sr-only" aria-live="polite" aria-atomic="false">
+        {anuncio && <p key={anuncio.id}>{anuncio.texto}</p>}
+      </div>
       <div
         className="h-[max(26rem,calc(100dvh-24rem))] overflow-y-auto rounded-opt bg-subtle p-4"
         tabIndex={0}
         role="log"
         aria-label="Mensajes del curso"
-        aria-live="polite"
+        aria-live="off"
       >
         {mensajes.length === 0 && (
           <p>Aún no hay mensajes. Escribe el primero.</p>
@@ -461,6 +512,8 @@ function Sala({ curso, onModerado }) {
           onChange={(e) => setTexto(e.target.value)}
           maxLength={1000}
         />
+        {/* RF-045: dictar el mensaje por voz */}
+        <BotonDictado valor={texto} onCambio={(v) => setTexto(v.slice(0, 1000))} campo="en el mensaje" className="mt-0" />
         <Button
           type="submit"
           icono={Send}

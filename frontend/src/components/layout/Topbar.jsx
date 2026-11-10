@@ -23,7 +23,8 @@ export function ChipPuntos() {
       api.logros
         .ver()
         .then((l) => {
-          if (activo) setPuntos(l.puntos);
+          // RF-047: con la gamificación en pausa no se muestran los puntos.
+          if (activo) setPuntos(l.avisosPausados ? null : l.puntos);
         })
         .catch(() => {});
     cargar();

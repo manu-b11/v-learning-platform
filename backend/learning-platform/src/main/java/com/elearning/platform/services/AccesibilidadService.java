@@ -32,6 +32,7 @@ public class AccesibilidadService {
     private final ConfiguracionAccesibilidadRepository configuraciones;
     private final EstudianteRepository estudiantes;
     private final AuditoriaService auditoria;
+    private final com.elearning.platform.repository.UsuarioRepository usuarios;
 
     @Transactional(readOnly = true)
     public PerfilAccesibilidadRespuesta obtener(Long estudianteId) {
@@ -69,6 +70,14 @@ public class AccesibilidadService {
         perfil.getCategorias().clear();
         perfil.getCategorias().addAll(categorias);
         perfiles.save(perfil);
+        // RF-047: con el perfil cognitivo, el resumen diario queda activo si la persona no lo eligió antes.
+        if (categorias.contains(CategoriaAccesibilidad.COGNITIVA)) {
+            usuarios.findById(estudianteId).filter(u -> u.getResumenDiario() == null).ifPresent(u -> {
+                u.setResumenDiario(true);
+                if (u.getHoraResumen() == null) u.setHoraResumen(NotificacionService.HORA_RESUMEN_POR_DEFECTO);
+                usuarios.save(u);
+            });
+        }
         insertarConfiguracion(perfil, ReglasAccesibilidad.porCategorias(categorias));
         auditoria.registrar(estudianteId, "ACCESIBILIDAD_PERFIL_GUARDADO", categorias.toString(),
                 ResultadoAuditoria.PERMITIDO, ip);
@@ -151,12 +160,16 @@ public class AccesibilidadService {
         c.setTranscripcion(dto.transcripcion());
         c.setTextoAVoz(dto.textoAVoz());
         c.setTiempoAdicional(dto.tiempoAdicional());
+        c.setSubrayarEnlaces(Boolean.TRUE.equals(dto.subrayarEnlaces())); // RF-035
+        c.setModoLectura(Boolean.TRUE.equals(dto.modoLectura())); // RF-046
+        c.setAnunciarMensajes(!Boolean.FALSE.equals(dto.anunciarMensajes())); // RF-034
         configuraciones.save(c);
     }
 
     private static ConfiguracionDto aDto(ConfiguracionAccesibilidad c) {
         return new ConfiguracionDto(c.isAltoContraste(), c.getTamanoFuente(), c.getTipografia(), c.getEspaciadoLinea(),
                 c.isNavegacionTeclado(), c.isLectorPantalla(), c.isSubtitulos(), c.isTranscripcion(),
-                c.isTextoAVoz(), c.getTiempoAdicional());
+                c.isTextoAVoz(), c.getTiempoAdicional(), c.isSubrayarEnlaces(), c.isModoLectura(),
+                c.isAnunciarMensajes());
     }
 }
