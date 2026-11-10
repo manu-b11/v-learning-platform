@@ -163,7 +163,8 @@ export default function ContenidoEditor({ moduloId, contenido, onGuardado, onCan
       <FormularioContenido moduloId={moduloId} contenido={inicial} onGuardado={onGuardado} onCancelar={onCancelar} version={version} />
       {editando && (
         <>
-          <RecursosEditor contenidoId={contenido.id} onCambio={() => { setVersion((v) => v + 1); onCambio?.(); }} />
+          <RecursosEditor contenidoId={contenido.id} urlOriginal={inicial?.urlRecurso} formato={inicial?.formato}
+            onCambio={() => { setVersion((v) => v + 1); onCambio?.(); }} />
           <Publicacion contenidoId={contenido.id} publicado={publicado} refresco={version}
             onCambio={(p) => { setPublicado(p); onCambio?.(); }} />
         </>

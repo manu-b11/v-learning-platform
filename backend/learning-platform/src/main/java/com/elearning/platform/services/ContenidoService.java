@@ -72,7 +72,8 @@ public class ContenidoService {
         Progreso p = esEstudiante ? progresos.findByEstudianteIdAndContenidoId(u.id(), contenidoId).orElse(null) : null;
         return new ContenidoVista(c.getId(), curso.getId(), c.getTitulo(), c.getDescripcion(), c.getFormato(),
                 c.getUrlRecurso(), cuerpo, c.getDuracionMinutos(),
-                recs.stream().map(r -> new RecursoRespuesta(r.getId(), r.getTipo(), r.getUrl(), r.getDescripcion(), r.isDisponible())).toList(),
+                recs.stream().map(r -> new RecursoRespuesta(r.getId(), r.getTipo(), r.getUrl(), r.getDescripcion(), r.isDisponible(),
+                        r.getDesfaseMs() == null ? 0 : r.getDesfaseMs())).toList(),
                 opcionesAlternativas(c, tipos), lse, mensajeLse, categorias.contains(CategoriaAccesibilidad.COGNITIVA),
                 advertencias,
                 p == null ? EstadoProgreso.NO_INICIADO : p.getEstado(),

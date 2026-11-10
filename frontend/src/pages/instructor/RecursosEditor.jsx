@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { api, detallesError, mensajeError } from "../../api/client.js";
 import { useNotif } from "../../context/NotifContext.jsx";
@@ -6,6 +6,56 @@ import { useAsync } from "../../utils/useAsync.js";
 import { Badge, Banner, Button, Cargando, EstadoError, SelectField, TextField } from "../../components/ui/index.jsx";
 import ConfirmarDialogo from "../../components/ConfirmarDialogo.jsx";
 import { TIPOS_RECURSO } from "./constantes.js";
+import { avisoDuraciones } from "../../utils/senas.js";
+
+/** Duración de un video por sus metadatos (sin descargarlo entero); null si no se puede leer. */
+function useDuracion(url) {
+  const [duracion, setDuracion] = useState(null);
+  useEffect(() => {
+    if (!url) return undefined;
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.muted = true;
+    const listo = () => setDuracion(Number.isFinite(v.duration) ? v.duration : null);
+    v.addEventListener("loadedmetadata", listo);
+    v.src = url;
+    return () => { v.removeEventListener("loadedmetadata", listo); v.removeAttribute("src"); v.load(); };
+  }, [url]);
+  return duracion;
+}
+
+/** RF-040: desfase del intérprete y aviso si las duraciones no coinciden. */
+function AjusteDesfase({ recurso, urlOriginal, onGuardado }) {
+  const { avisar } = useNotif();
+  const [valor, setValor] = useState(String(recurso.desfaseMs ?? 0));
+  const [trabajando, setTrabajando] = useState(false);
+  const original = useDuracion(urlOriginal);
+  const interprete = useDuracion(recurso.url);
+  const aviso = urlOriginal ? avisoDuraciones(original, interprete) : null;
+  const guardar = async () => {
+    setTrabajando(true);
+    try {
+      await api.instructor.desfaseRecurso(recurso.id, Number(valor) || 0);
+      avisar("Guardamos el desfase del intérprete.", "ok");
+      onGuardado();
+    } catch (e) {
+      avisar(mensajeError(e), "error");
+    } finally {
+      setTrabajando(false);
+    }
+  };
+  return (
+    <div className="mt-2 grid gap-2">
+      {aviso && <Banner tono="warn">{aviso}</Banner>}
+      <div className="flex flex-wrap items-end gap-3">
+        <TextField label="Desfase del intérprete (milisegundos)" type="number" inputMode="numeric" value={valor}
+          onChange={(e) => setValor(e.target.value)} className="max-w-56"
+          ayuda="Positivo: el intérprete va adelantado. Negativo: va atrasado." />
+        <Button variante="secondary" cargando={trabajando} onClick={guardar}>Guardar desfase</Button>
+      </div>
+    </div>
+  );
+}
 
 function FormularioRecurso({ contenidoId, onAgregado }) {
   const { avisar } = useNotif();
@@ -67,7 +117,7 @@ function FormularioRecurso({ contenidoId, onAgregado }) {
 }
 
 /** Lista y gestiona los recursos accesibles de un contenido (subtítulos, transcripción, etc.). */
-export default function RecursosEditor({ contenidoId, onCambio }) {
+export default function RecursosEditor({ contenidoId, onCambio, urlOriginal, formato }) {
   const { avisar } = useNotif();
   const { datos: recursos, cargando, error, recargar } = useAsync(() => api.instructor.recursos(contenidoId), [contenidoId]);
   const [aBorrar, setABorrar] = useState(null);
@@ -90,6 +140,9 @@ export default function RecursosEditor({ contenidoId, onCambio }) {
                 {r.url && <p className="mt-1 break-all text-sm"><a href={r.url} target="_blank" rel="noreferrer" className="font-bold text-primary-600 underline">{r.url}<span className="sr-only"> (se abre en otra pestaña)</span></a></p>}
                 {r.descripcion && <p className="mt-1 whitespace-pre-line text-sm text-body">{r.descripcion.length > 300 ? `${r.descripcion.slice(0, 300)}…` : r.descripcion}</p>}
                 {!r.disponible && <p className="mt-1 text-sm font-bold text-warn-fg">Este recurso no está disponible por ahora.</p>}
+                {r.tipo === "LENGUA_SENAS" && (
+                  <AjusteDesfase recurso={r} urlOriginal={formato === "VIDEO" ? urlOriginal : null} onGuardado={cambio} />
+                )}
               </div>
               <Button variante="ghost" icono={Trash2} onClick={() => setABorrar(r)}>Quitar<span className="sr-only"> {TIPOS_RECURSO[r.tipo]?.texto ?? r.tipo}</span></Button>
             </li>

@@ -198,6 +198,7 @@ export const api = {
     recursos: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/recursos`)),
     crearRecurso: (contenidoId, datos) => d(client.post(`/contenidos/${contenidoId}/recursos`, datos)),
     borrarRecurso: (id) => d(client.delete(`/recursos/${id}`)),
+    desfaseRecurso: (id, desfaseMs) => d(client.patch(`/recursos/${id}/desfase`, { desfaseMs })), // RF-040
     conformidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/conformidad`)),
     // RF-049: verificador de accesibilidad del contenido
     accesibilidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/accesibilidad`)),

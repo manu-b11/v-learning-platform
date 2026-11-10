@@ -396,6 +396,7 @@ CREATE TABLE recursos_accesibles (
     disponible BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_recurso_accesible_contenido FOREIGN KEY (contenido_id)
         REFERENCES contenidos(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+    desfase_ms INT NOT NULL DEFAULT 0, -- RF-040: desfase del video de lengua de señas
     CONSTRAINT ck_recursos_accesibles_tipo CHECK (tipo IN ('TEXTO_ALTERNATIVO', 'SUBTITULO', 'TRANSCRIPCION', 'AUDIO', 'LENGUA_SENAS', 'VERSION_SIMPLIFICADA'))
 );
 
