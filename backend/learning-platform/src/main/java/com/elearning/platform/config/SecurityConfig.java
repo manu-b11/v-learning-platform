@@ -61,7 +61,7 @@ public class SecurityConfig {
                         .contentTypeOptions(c -> { }))
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/login", "/api/auth/otp/verificar",
+                        .requestMatchers("/api/auth/login", "/api/auth/otp/verificar", "/api/auth/otp/reenviar",
                                 "/api/auth/recuperar", "/api/auth/restablecer").permitAll()
                         // Las portadas de curso son públicas para que el navegador pueda cargarlas.
                         .requestMatchers(HttpMethod.GET, "/api/archivos/**").permitAll()

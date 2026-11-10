@@ -84,6 +84,7 @@ export const api = {
   auth: {
     login: (correo, password) => d(client.post("/auth/login", { correo, password })),
     verificarOtp: (correo, codigo) => d(client.post("/auth/otp/verificar", { correo, codigo })),
+    reenviarOtp: (correo) => d(client.post("/auth/otp/reenviar", { correo })),
     recuperar: (correo) => d(client.post("/auth/recuperar", { correo })),
     restablecer: (tokenRec, nuevaPassword) => d(client.post("/auth/restablecer", { token: tokenRec, nuevaPassword })),
     me: () => d(client.get("/auth/me")),

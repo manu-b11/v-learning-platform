@@ -5,6 +5,7 @@ import com.elearning.platform.security.UsuarioPrincipal;
 import com.elearning.platform.services.AuthService;
 import com.elearning.platform.services.RecuperacionService;
 import com.elearning.platform.util.IpUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,15 @@ public class AuthController {
     @PostMapping("/otp/verificar")
     public SesionRespuesta verificarOtp(@Valid @RequestBody OtpRequest req, HttpServletRequest http) {
         return auth.verificarOtp(req, IpUtil.de(http));
+    }
+
+    /** RF-044: reenvía el código de verificación (máximo uno por minuto y cinco cada 30 minutos). */
+    @Operation(summary = "Reenviar el código OTP (RF-044)",
+            description = "Público. Solo envía un código si la persona validó su contraseña hace menos de 30 minutos. "
+                    + "Responde 429 si se pide antes de 60 s o tras 5 reenvíos.")
+    @PostMapping("/otp/reenviar")
+    public LoginRespuesta reenviarOtp(@Valid @RequestBody ReenviarOtpRequest req, HttpServletRequest http) {
+        return auth.reenviarOtp(req, IpUtil.de(http));
     }
 
     @PostMapping("/recuperar")

@@ -13,12 +13,26 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-/** Segundo factor (RF-002): código de 6 dígitos, válido 5 minutos, guardado solo como hash. */
+/**
+ * Segundo factor (RF-002): código de 6 dígitos guardado solo como hash.
+ * RF-044: el código vale al menos 10 minutos y se puede reenviar con límites.
+ */
 @Service
 @RequiredArgsConstructor
 public class OtpService {
 
     private static final SecureRandom ALEATORIO = new SecureRandom();
+
+    /** RF-044: vigencia mínima del código, aunque la propiedad configure menos. */
+    static final int MINUTOS_MINIMOS_VIGENCIA = 10;
+    /** RF-044: segundos de espera entre un código y el siguiente. */
+    static final int SEGUNDOS_ENTRE_REENVIOS = 60;
+    /** RF-044: reenvíos permitidos en la ventana; el reenvío solo vale para un inicio de sesión reciente. */
+    static final int MAX_REENVIOS = 5;
+    static final int VENTANA_REENVIO_MINUTOS = 30;
+
+    /** RF-044: resultado de la política de reenvío. */
+    public enum Reenvio { PERMITIDO, SIN_DESAFIO, ESPERAR, LIMITE }
 
     private final CodigoOtpRepository repositorio;
     private final VlearningProperties props;
@@ -31,7 +45,7 @@ public class OtpService {
         CodigoOtp otp = new CodigoOtp();
         otp.setUsuarioId(usuario.getId());
         otp.setCodigoHash(hash(usuario.getId(), codigo));
-        otp.setFechaExpiracion(LocalDateTime.now().plusMinutes(props.otp().minutosValidez()));
+        otp.setFechaExpiracion(LocalDateTime.now().plusMinutes(minutosVigencia()));
         otp.setIpOrigen(ip);
         repositorio.save(otp);
         return codigo;
@@ -58,6 +72,29 @@ public class OtpService {
     public Optional<LocalDateTime> inicioCodigoVigente(Usuario usuario) {
         return repositorio.findFirstByUsuarioIdAndUsadoFalseOrderByFechaCreacionDesc(usuario.getId())
                 .map(CodigoOtp::getFechaCreacion);
+    }
+
+    /** RF-044: minutos que vale cada código (mínimo 10). */
+    public int minutosVigencia() {
+        return minutosVigencia(props.otp().minutosValidez());
+    }
+
+    static int minutosVigencia(int configurados) {
+        return Math.max(configurados, MINUTOS_MINIMOS_VIGENCIA);
+    }
+
+    /**
+     * RF-044: decide si se puede enviar otro código. Solo hay reenvío si existe un código pendiente
+     * creado hace menos de 30 minutos (es decir, la persona acaba de validar su contraseña), con 60 s
+     * de espera entre códigos y como máximo 5 reenvíos en la ventana.
+     */
+    static Reenvio politicaReenvio(LocalDateTime creacionPendiente, long reenviosRecientes, LocalDateTime ahora) {
+        if (creacionPendiente == null || creacionPendiente.isBefore(ahora.minusMinutes(VENTANA_REENVIO_MINUTOS))) {
+            return Reenvio.SIN_DESAFIO;
+        }
+        if (creacionPendiente.isAfter(ahora.minusSeconds(SEGUNDOS_ENTRE_REENVIOS))) return Reenvio.ESPERAR;
+        if (reenviosRecientes >= MAX_REENVIOS) return Reenvio.LIMITE;
+        return Reenvio.PERMITIDO;
     }
 
     /** HMAC-like: el secreto del servidor evita recuperar el código de 6 dígitos a partir de la base. */
