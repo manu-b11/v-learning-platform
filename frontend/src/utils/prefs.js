@@ -12,6 +12,7 @@ export const PREFS_BASE = {
   transcripcion: false,
   textoAVoz: false,
   tiempoAdicional: 0,
+  subrayarEnlaces: false, // RF-035
 };
 
 const FUENTES = {
@@ -19,6 +20,7 @@ const FUENTES = {
   Inter: "inter",
   "Atkinson Hyperlegible Next": "atkinson",
   Lexend: "lexend",
+  OpenDyslexic: "opendyslexic", // RF-035
   Arial: "arial",
   Verdana: "verdana",
   // Valor antiguo de la configuración por defecto: ahora mostramos Poppins + Inter.
@@ -42,4 +44,5 @@ export function aplicarAlDocumento(cfg, categorias = []) {
   el.dataset.keyboard = cfg.navegacionTeclado ? "on" : "off";
   el.dataset.reader = cfg.lectorPantalla ? "on" : "off";
   el.dataset.talkback = cfg.narracionNavegacion ? "on" : "off";
+  el.dataset.links = cfg.subrayarEnlaces ? "underline" : "normal"; // RF-035
 }

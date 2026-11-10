@@ -17,7 +17,16 @@ public final class ReglasAccesibilidad {
     public static final String FUENTE_BASE = "Poppins + Inter";
     public static final String FUENTE_ATKINSON = "Atkinson Hyperlegible Next";
     public static final String FUENTE_LEXEND = "Lexend";
-    public static final List<String> TIPOGRAFIAS = List.of(FUENTE_BASE, FUENTE_ATKINSON, FUENTE_LEXEND, "Arial", "Verdana", "Sistema");
+    /** RF-035: fuente diseñada para dislexia, opción adicional a Lexend (no la reemplaza). */
+    public static final String FUENTE_OPENDYSLEXIC = "OpenDyslexic";
+    public static final List<String> TIPOGRAFIAS = List.of(FUENTE_BASE, FUENTE_ATKINSON, FUENTE_LEXEND,
+            FUENTE_OPENDYSLEXIC, "Arial", "Verdana", "Sistema");
+
+    /** RF-035: tipografías pensadas para facilitar la lectura; la sugerencia automática no las cambia. */
+    static boolean esFuenteDeLectura(String tipografia) {
+        return FUENTE_ATKINSON.equals(tipografia) || FUENTE_LEXEND.equals(tipografia)
+                || FUENTE_OPENDYSLEXIC.equals(tipografia);
+    }
 
     private ReglasAccesibilidad() {}
 
@@ -75,9 +84,8 @@ public final class ReglasAccesibilidad {
         }
         boolean necesitaLegible = categorias.contains(CategoriaAccesibilidad.VISUAL)
                 || categorias.contains(CategoriaAccesibilidad.COGNITIVA);
-        if (necesitaLegible && c.tipografia() != null
-                && !c.tipografia().equals(FUENTE_ATKINSON) && !c.tipografia().equals(FUENTE_LEXEND)) {
-            avisos.add("Las tipografías Atkinson Hyperlegible Next y Lexend están diseñadas para facilitar la lectura.");
+        if (necesitaLegible && c.tipografia() != null && !esFuenteDeLectura(c.tipografia())) {
+            avisos.add("Las tipografías Atkinson Hyperlegible Next, Lexend y OpenDyslexic están diseñadas para facilitar la lectura.");
         }
         return avisos;
     }
@@ -90,7 +98,7 @@ public final class ReglasAccesibilidad {
         // una fuente de lectura cuando hay necesidades visuales o cognitivas.
         boolean necesitaLegible = categorias.contains(CategoriaAccesibilidad.VISUAL)
                 || categorias.contains(CategoriaAccesibilidad.COGNITIVA);
-        if (necesitaLegible && !FUENTE_ATKINSON.equals(tipografia) && !FUENTE_LEXEND.equals(tipografia)) {
+        if (necesitaLegible && !esFuenteDeLectura(tipografia)) {
             tipografia = categorias.contains(CategoriaAccesibilidad.VISUAL) ? FUENTE_ATKINSON : FUENTE_LEXEND;
         }
         return new ConfiguracionDto(
@@ -103,6 +111,7 @@ public final class ReglasAccesibilidad {
                 c.subtitulos() || auto.subtitulos(),
                 c.transcripcion() || auto.transcripcion(),
                 c.textoAVoz() || auto.textoAVoz(),
-                Math.max(c.tiempoAdicional(), auto.tiempoAdicional()));
+                Math.max(c.tiempoAdicional(), auto.tiempoAdicional()),
+                Boolean.TRUE.equals(c.subrayarEnlaces()));
     }
 }

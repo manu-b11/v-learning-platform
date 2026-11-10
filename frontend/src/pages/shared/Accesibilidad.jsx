@@ -23,6 +23,7 @@ const FUENTES = [
   "Poppins + Inter",
   "Atkinson Hyperlegible Next",
   "Lexend",
+  "OpenDyslexic",
   "Arial",
   "Verdana",
 ];
@@ -224,6 +225,12 @@ export default function Accesibilidad({ embebido = false }) {
               </div>
             )}
             <div className="divide-y divide-line">
+              <Toggle
+                label={t("Subrayar enlaces")}
+                descripcion={t("Todos los enlaces se ven subrayados, sin depender del color.")}
+                checked={Boolean(config.subrayarEnlaces)}
+                onChange={(v) => actualizar({ subrayarEnlaces: v })}
+              />
               <Toggle
                 label={t("Alto contraste")}
                 descripcion={t("Colores con más contraste.", "Colores más fuertes para ver mejor.")}

@@ -31,7 +31,18 @@ public final class AccesibilidadDtos {
             boolean transcripcion,
             boolean textoAVoz,
             @NotNull(message = "Indica el tiempo adicional.") @Min(value = 0, message = "No puede ser negativo.")
-            @Max(value = 200, message = "El máximo es 200 %.") Integer tiempoAdicional) {}
+            @Max(value = 200, message = "El máximo es 200 %.") Integer tiempoAdicional,
+            /** RF-035: subrayar todos los enlaces (null = no). */
+            Boolean subrayarEnlaces) {
+
+        /** Constructor con los ajustes anteriores a RF-035 (sin subrayado de enlaces). */
+        public ConfiguracionDto(boolean altoContraste, Integer tamanoFuente, String tipografia, BigDecimal espaciadoLinea,
+                                boolean navegacionTeclado, boolean lectorPantalla, boolean subtitulos,
+                                boolean transcripcion, boolean textoAVoz, Integer tiempoAdicional) {
+            this(altoContraste, tamanoFuente, tipografia, espaciadoLinea, navegacionTeclado, lectorPantalla,
+                    subtitulos, transcripcion, textoAVoz, tiempoAdicional, false);
+        }
+    }
 
     public record PerfilAccesibilidadRequest(@NotNull(message = "Envía la lista de categorías (puede estar vacía).")
                                              Set<CategoriaAccesibilidad> categorias) {}

@@ -53,6 +53,10 @@ public class ConfiguracionAccesibilidad {
     @Column(name = "tiempo_adicional", nullable = false)
     private Integer tiempoAdicional = 0;
 
+    /** RF-035: subrayar todos los enlaces para no depender del color (WCAG 1.4.1). */
+    @Column(name = "subrayar_enlaces", nullable = false)
+    private boolean subrayarEnlaces = false;
+
     @Column(name = "fecha_configuracion", nullable = false)
     private LocalDateTime fechaConfiguracion;
 
