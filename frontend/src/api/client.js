@@ -128,6 +128,8 @@ export const api = {
   contenidos: {
     ver: (id) => d(client.get(`/contenidos/${id}`)),
     apoyo: (id) => d(client.get(`/contenidos/${id}/apoyo-cognitivo`)),
+    // RF-036: MP3 de la lectura en voz alta con la velocidad elegida
+    audio: (id, velocidad) => descargar(client.get(`/contenidos/${id}/audio`, { params: { velocidad }, responseType: "blob", timeout: 60000 }), "lectura.mp3"),
     progreso: (id, datos) => d(client.post(`/contenidos/${id}/progreso`, datos)),
   },
   evaluaciones: {

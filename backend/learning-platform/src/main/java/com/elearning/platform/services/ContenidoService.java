@@ -81,6 +81,20 @@ public class ContenidoService {
     }
 
     /** RF-022: pasos cortos, resumen, glosario y versión simplificada. */
+    /** RF-036: título y texto plano que se lee en voz alta (lectura sin marcas + transcripción). */
+    public record TextoLeible(Long id, String titulo, String texto) {}
+
+    @Transactional(readOnly = true)
+    public TextoLeible textoLeible(UsuarioPrincipal u, Long contenidoId) {
+        Contenido c = cargarConAcceso(u, contenidoId);
+        StringBuilder sb = new StringBuilder(TextoApoyo.limpiar(c.getCuerpo()));
+        recursos.findByContenidoIdOrderByIdAsc(contenidoId).stream()
+                .filter(r -> r.isDisponible() && r.getTipo() == TipoRecursoAccesible.TRANSCRIPCION
+                        && r.getDescripcion() != null && !r.getDescripcion().isBlank())
+                .findFirst().ifPresent(r -> sb.append(sb.isEmpty() ? "" : "\n").append(r.getDescripcion().trim()));
+        return new TextoLeible(c.getId(), c.getTitulo(), sb.toString().trim());
+    }
+
     @Transactional
     public ApoyoCognitivoRespuesta apoyoCognitivo(UsuarioPrincipal u, Long contenidoId) {
         Contenido c = cargarConAcceso(u, contenidoId);

@@ -6,6 +6,7 @@ import {
   BookOpen,
   Check,
   ClipboardCheck,
+  Download,
   ExternalLink,
   Pause,
   Play,
@@ -282,6 +283,7 @@ function LeccionContenido() {
                 texto={textoLeible || c.descripcion || c.titulo}
                 t={t}
                 avisar={avisar}
+                contenidoId={c.id}
               />
             ) : null}
           </>
@@ -522,8 +524,21 @@ export default function Leccion() {
 }
 
 /** RF-018: lectura en voz alta con pausar/reanudar, retroceder una frase, velocidad y detener. */
-function ControlesVoz({ texto, t, avisar }) {
+function ControlesVoz({ texto, t, avisar, contenidoId }) {
   const voz = useLecturaVoz(texto);
+  // RF-036: descargar la lectura en MP3 con la velocidad elegida.
+  const [bajando, setBajando] = useState(false);
+  const descargarAudio = async () => {
+    setBajando(true);
+    try {
+      await api.contenidos.audio(contenidoId, voz.velocidad);
+      avisar(t("Descarga lista."), "ok");
+    } catch (e) {
+      avisar(mensajeError(e, t("No pudimos generar el audio. Intenta de nuevo.")), "error");
+    } finally {
+      setBajando(false);
+    }
+  };
   const activo = voz.estado !== "detenido";
   const empezar = () => {
     if (!voz.soportado) {
@@ -557,6 +572,11 @@ function ControlesVoz({ texto, t, avisar }) {
             {t("Detener")}
           </Button>
         </>
+      )}
+      {contenidoId && (
+        <Button variante="secondary" icono={Download} cargando={bajando} onClick={descargarAudio}>
+          {t("Descargar audio")}
+        </Button>
       )}
       <label className="flex flex-col text-sm font-bold text-strong">
         {t("Velocidad")}
