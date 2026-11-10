@@ -41,7 +41,7 @@ Proyecto de aula · Tecnológico de Antioquia I.U. · Autores: Manuela Bolívar 
 
 | # | Objetivo | Dónde se cumple |
 |---|---|---|
-| OBJ-1 | Acceso controlado, trazable y accesible | RF-001 a RF-003, RF-013, RF-014 a RF-022 |
+| OBJ-1 | Acceso controlado, trazable y accesible | RF-001 a RF-003, RF-013, RF-014 a RF-022; accesibilidad en acceso y evaluaciones: RF-039, RF-041 a RF-044, RF-048, RF-049 |
 | OBJ-2 | Personalizar según el perfil del estudiante | RF-004, RF-005 |
 | OBJ-3 | Visibilidad del avance | RF-006, RF-011, RF-012 |
 | OBJ-4 | Medir el aprendizaje de forma adaptativa | RF-007, RF-008 |
@@ -104,7 +104,10 @@ v-learning-platform/
 ├─ database/
 │  ├─ vlearning_postgresql.sql      Esquema PostgreSQL completo (ampliaciones marcadas [EXT])
 │  ├─ migracion_doble_factor.sql    Migración: segundo factor opcional para estudiantes
-│  └─ migracion_auditoria_inmutable_y_cola_chat.sql
+│  ├─ migracion_auditoria_inmutable_y_cola_chat.sql
+│  ├─ migracion_desbloqueo_cuenta.sql          RF-043
+│  ├─ migracion_acomodaciones.sql              RF-041, RF-042
+│  └─ migracion_verificador_accesibilidad.sql  RF-049, RF-039
 │                                   Migración: auditoría de solo inserción y cola de reenvío del chat
 ├─ docs/
 │  └─ img/                           Imágenes del README (sección 12)
@@ -161,6 +164,9 @@ v-learning-platform/
    ```bash
    psql -U vlearning_admin -d vlearning -f database/migracion_doble_factor.sql
    psql -U vlearning_admin -d vlearning -f database/migracion_auditoria_inmutable_y_cola_chat.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_desbloqueo_cuenta.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_acomodaciones.sql
+   psql -U vlearning_admin -d vlearning -f database/migracion_verificador_accesibilidad.sql
    ```
 4. La tabla `registros_auditoria` es de **solo inserción**: los triggers `trg_registros_auditoria_inmutable` y `trg_registros_auditoria_sin_truncate` rechazan `UPDATE`, `DELETE` y `TRUNCATE` para cualquier rol, incluido el dueño. Opcional: un rol de aplicación sin privilegios de dueño (bloque comentado al final del script).
 
@@ -399,6 +405,13 @@ flowchart TD
 | RF-029 | HU-029 | Notas del curso | `NotasCursoService` | `GET /cursos/{id}/notas` |
 | RF-030 | HU-030 | Administrar cuentas | `UsuarioService`, `AdminPanelService` | `PATCH /admin/usuarios/{id}/estado`, `POST /admin/usuarios/{id}/reenviar-credenciales`, `GET /admin/dashboard` |
 | RF-031 | HU-031 | Verificación en dos pasos del estudiante | `AuthService` | `PUT /auth/doble-factor` |
+| RF-039 | HU-039 | Transcripción obligatoria para podcasts | `AccesibilidadContenidoService` (regla `AUDIO_SIN_TRANSCRIPCION`) | `POST /contenidos/{id}/publicar`, `POST /instructor/cursos/{id}/publicar` (422 con hallazgos) |
+| RF-041 | HU-041 | Acomodaciones de evaluación por estudiante | `AcomodacionService`, `EvaluacionService` (`TiempoEvaluacion`) | `GET/POST/DELETE /cursos/{cursoId}/acomodaciones` |
+| RF-042 | HU-042 | Aviso antes de que termine el tiempo | `SesionService`, `JwtAuthFilter`, `EvaluacionService`; frontend `AvisoSesion` | `POST /auth/refresh`, `POST /intentos/{id}/ampliar`, cabecera `X-Sesion-Restante` |
+| RF-043 | HU-043 | Desbloqueo por enlace al correo | `DesbloqueoService` | `POST /auth/desbloquear`, `POST /auth/desbloqueo/solicitar` |
+| RF-044 | HU-044 | Código OTP accesible | `OtpService`, `AuthService`; `Login.jsx` | `POST /auth/otp/reenviar` |
+| RF-048 | HU-048 | Ayuda en un lugar consistente | Frontend (`BotonAyuda`, `utils/ayuda.js`) | — |
+| RF-049 | HU-049 | Verificador de accesibilidad del contenido | `AccesibilidadContenidoService` (commonmark + jsoup), `HallazgoAccesibilidad` | `GET /contenidos/{id}/accesibilidad`, `POST /contenidos/{id}/accesibilidad/verificar` |
 
 > **Diferencia entre documentos:** la HU-024 menciona el perfil VARK como insumo del Tutor, pero el diagrama y el RF-024 lo excluyen. Se implementa el diagrama: el Tutor se adapta **solo** al perfil de accesibilidad y al desempeño.
 
@@ -416,6 +429,9 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 | POST | `/auth/otp/verificar` | Valida OTP y entrega el JWT |
 | POST | `/auth/recuperar` | Solicita enlace de recuperación (respuesta genérica) |
 | POST | `/auth/restablecer` | Restablece con token de un solo uso |
+| POST | `/auth/otp/reenviar` | Reenvía el código OTP: 60 s entre códigos, 5 por inicio de sesión (RF-044) |
+| POST | `/auth/desbloquear` | Desbloquea la cuenta con el enlace de un solo uso del correo (RF-043) |
+| POST | `/auth/desbloqueo/solicitar` | Pide un enlace de desbloqueo nuevo (respuesta genérica, RF-043) |
 
 ### Cualquier usuario autenticado
 
@@ -424,6 +440,7 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 | GET | `/auth/me` | Usuario, rol y banderas de onboarding |
 | POST | `/auth/primer-acceso` | Cambia la contraseña temporal |
 | POST | `/auth/logout` | Invalida la sesión |
+| POST | `/auth/refresh` | Amplía la sesión al responder al aviso de tiempo; emite un token nuevo (RF-042) |
 | GET | `/notificaciones` · PATCH `/notificaciones/{id}/leida` · PUT `/notificaciones/preferencias` | Notificaciones |
 | POST | `/notificaciones/{id}/posponer` | Pospone un recordatorio (RF-011) |
 | GET/POST | `/cursos/{id}/mensajes` · WS `/ws/cursos/{id}` | Chat y foro del curso (solo miembros) |
@@ -445,6 +462,7 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 | POST | `/contenidos/{id}/progreso` | Registra avance y tiempo |
 | GET | `/modulos/{id}/evaluaciones` · `/evaluaciones/{id}/historial` | Evaluaciones e intentos |
 | POST/PUT | `/evaluaciones/{id}/intentos` · `/intentos/{id}/respuestas/{p}` · `/intentos/{id}/finalizar` | Intento con guardado automático |
+| POST | `/intentos/{id}/ampliar` | Amplía el intento una vez si la acomodación lo permite (RF-042) |
 | GET | `/intentos/{id}/resultado` | Resultado y retroalimentación |
 | GET | `/progreso` · `/progreso/exportar?formato=PDF\|EXCEL` | Dashboard y exportación propia |
 | GET | `/logros` · `/cursos/{id}/ranking` | Puntos, nivel, insignias, ranking |
@@ -458,7 +476,9 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 | GET/POST/PUT | `/instructor/cursos` | Sus cursos |
 | POST | `/instructor/cursos/{id}/modulos` · `/modulos/{id}/contenidos` | Estructura del curso |
 | POST | `/contenidos/{id}/recursos` | Recursos accesibles |
-| POST | `/contenidos/{id}/publicar` · `/instructor/cursos/{id}/publicar` | Publicación (bloquea no conformes) |
+| POST | `/contenidos/{id}/publicar` · `/instructor/cursos/{id}/publicar` | Publicación: ejecuta el verificador y responde 422 con los hallazgos bloqueantes (RF-019, RF-039, RF-049) |
+| GET/POST | `/contenidos/{id}/accesibilidad` · `/contenidos/{id}/accesibilidad/verificar` | Informe de accesibilidad del contenido y revisión en vivo del borrador (RF-049) |
+| GET/POST/DELETE | `/cursos/{cursoId}/acomodaciones` | Acomodaciones de evaluación por estudiante (RF-041; también administrador) |
 | POST | `/modulos/{id}/evaluaciones` · `/evaluaciones/{id}/preguntas` | Evaluaciones y preguntas |
 | GET/POST/PUT/DELETE | `/instructor/modulos/{id}/tareas` · `/modulos/{id}/tareas` · `/tareas/{id}` | Tareas calificables del módulo |
 | GET | `/moderacion/reportes` | Mensajes reportados pendientes en los cursos del instructor |
@@ -475,7 +495,8 @@ Base: `/api`. Todos requieren JWT salvo los marcados como públicos. El rol se l
 |---|---|---|
 | GET | `/admin/dashboard` | Cursos, estudiantes, instructores, inscripciones, progreso promedio |
 | POST/GET | `/admin/usuarios` | Registrar y listar usuarios |
-| PATCH | `/admin/usuarios/{id}/estado` | Activar, bloquear, inactivar |
+| PATCH | `/admin/usuarios/{id}/estado` | Activar, bloquear, inactivar (también desbloquea tras 3 bloqueos en 24 h, RF-043) |
+| GET/POST/DELETE | `/cursos/{cursoId}/acomodaciones` | Acomodaciones de evaluación por estudiante (RF-041) |
 | POST | `/admin/usuarios/{id}/reenviar-credenciales` | Reenvía contraseña temporal |
 | POST | `/admin/cursos/{id}/inscripciones` | Inscribe estudiantes |
 | GET/PUT/POST | `/admin/gamificacion/reglas` · `/admin/gamificacion/insignias` | Reglas e insignias |
@@ -494,8 +515,8 @@ Los códigos de error siguen un formato único (`ApiException` + `GlobalExceptio
   - `contenidos`: `url_recurso`, `cuerpo` (HU-006, HU-023).
   - `perfiles_aprendizaje`: `metodo_secundario`, distinto del principal.
   - `codigos_otp` (HU-002) y `respuestas_vark_parciales` (HU-005, guardado parcial).
-- **Autenticación en dos pasos (HU-002):** OTP de 6 dígitos válido 5 min, guardado hasheado; obligatorio para administrador e instructor, activado por defecto y desactivable para el estudiante. Bloqueo de 15 min tras 5 fallos de contraseña en 15 min, con aviso por correo; 5 códigos OTP fallidos invalidan el código y obligan a iniciar sesión de nuevo.
-- **Sesiones (HU-004):** cada login crea una fila en `sesiones` con el hash SHA-256 del token; se valida firma, sesión activa, inactividad deslizante de 30 min y que el usuario siga habilitado. Cambiar o restablecer la contraseña invalida todas las sesiones.
+- **Autenticación en dos pasos (HU-002):** OTP de 6 dígitos válido al menos 10 min (RF-044), guardado hasheado y reenviable; obligatorio para administrador e instructor, activado por defecto y desactivable para el estudiante. Bloqueo de 15 min tras 5 fallos de contraseña en 15 min, con un enlace de desbloqueo de un solo uso al correo (RF-043); tras 3 bloqueos en 24 h desbloquea el administrador. 5 códigos OTP fallidos invalidan el código y obligan a iniciar sesión de nuevo.
+- **Sesiones (HU-004):** cada login crea una fila en `sesiones` con el hash SHA-256 del token; se valida firma, sesión activa, inactividad deslizante de 30 min y que el usuario siga habilitado. Cambiar o restablecer la contraseña invalida todas las sesiones. Cada respuesta trae `X-Sesion-Restante` y, a 2 minutos del final, el frontend ofrece ampliar la sesión con `POST /auth/refresh` (RF-042).
 - **Contraseñas:** BCrypt; política de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.
 - **Auditoría solo de inserción (HU-015):** la entidad es `@Immutable` (Hibernate nunca emite `UPDATE`) y la base lo garantiza con triggers que rechazan `UPDATE`, `DELETE` y `TRUNCATE` para cualquier rol. La única excepción es la acción `ON DELETE SET NULL` de la FK hacia `usuarios`, que ejecuta el propio motor y solo puede poner `usuario_id` en `NULL`. Se registra de forma síncrona en una transacción independiente (`REQUIRES_NEW`), de modo que el registro sobrevive aunque la operación se revierta.
 - **Regla de avance (HU-007):** un módulo está completo cuando se completó al menos un formato publicado; el % del curso es módulos completos ÷ módulos con contenido publicado.
@@ -634,7 +655,7 @@ Guarda cada imagen en `docs/img/` con el nombre indicado. Todos los prompts sigu
 
 ---
 
-## 13. Accesibilidad (WCAG 2.1 AA)
+## 13. Accesibilidad (WCAG 2.2 AA)
 
 | Criterio | Cómo se cumple |
 |---|---|
@@ -647,7 +668,11 @@ Guarda cada imagen en `docs/img/` con el nombre indicado. Todos los prompts sigu
 | Texto y tipografía | Unidades `rem`; tamaños 100 / 125 / 150 %; interlineado 1.35 / 1.5 / 1.75; fuentes Atkinson, sistema o Dislexia (Lexend); líneas ≤ ~70 caracteres. |
 | Multimodal | Subtítulos, transcripción sincronizada, lectura en voz alta (Web Speech API), formatos alternativos y versión simplificada. |
 | Movimiento | Respeta `prefers-reduced-motion`. |
-| Tiempo | Tiempo adicional configurable en actividades cronometradas. |
+| Tiempo | Tiempo adicional configurable en actividades cronometradas. Acomodaciones por estudiante (1,5x, 2x, ilimitado, fecha especial) calculadas en el servidor: se aplica el mayor entre perfil y acomodación (RF-041). Aviso a 2 minutos del fin de la sesión y de la evaluación, con ampliación (RF-042, 2.2.1). |
+| Autenticación accesible | Código OTP en un solo campo con `autocomplete="one-time-code"`, que admite pegar, error asociado al campo y «Reenviar código» (RF-044, 3.3.8). Desbloqueo por enlace al correo, sin depender del administrador (RF-043). |
+| Ayuda consistente | Botón «Ayuda» siempre en la misma posición de la barra superior: ayuda de la página, Tutor de IA y contacto con el instructor (RF-048, 3.2.6). |
+| Contenido accesible al publicar | Verificador del instructor: imagen sin texto alternativo, salto de encabezado, tabla sin encabezados, enlace no descriptivo, contraste en línea, video sin subtítulos o transcripción y audio sin transcripción (RF-049, RF-039). Los bloqueantes impiden publicar (422). |
+| Pruebas automáticas | `npm run test:a11y` (Playwright + axe-core, etiquetas `wcag2a`, `wcag2aa`, `wcag21aa`, `wcag22aa`) sobre 8 pantallas; falla con violaciones serias o críticas. |
 | Lenguaje | Errores que dicen qué pasó y qué hacer; aviso fijo de transparencia de IA. |
 | Preferencias | Se guardan en el servidor, se aplican en menos de 1 s, con vista previa y botón **Restablecer**. |
 

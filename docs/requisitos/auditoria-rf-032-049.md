@@ -85,3 +85,20 @@ Se agregarán, como mínimo, pruebas para el cálculo de tiempo con acomodación
 ## 7. Siguiente paso
 
 Espero tu confirmación de los conflictos C1 a C12 (o tus cambios) antes de empezar la fase 1 en la rama `feat/accesibilidad-sprint-8`.
+
+## 8. Estado de implementación
+
+Actualizado al cerrar el Sprint 8 (rama `feat/accesibilidad-sprint-8`). La tabla de la sección 2 es la foto previa a implementar; esta sección registra lo hecho. Las decisiones C1 a C12 se aplicaron con su propuesta por defecto.
+
+| RF | Estado | Archivos principales | Pruebas | Criterios con ⚠️ |
+| --- | --- | --- | --- | --- |
+| RF-044 | Implementado | `B/services/OtpService.java`, `B/services/AuthService.java` (`reenviarOtp`), `B/controller/AuthController.java`, `F/pages/auth/Login.jsx` | `OtpServiceTest` (6), `a11y.spec.js` › verificación OTP | — |
+| RF-043 | Implementado | `B/services/DesbloqueoService.java`, `B/entity/TokenDesbloqueo.java`, `F/pages/auth/Desbloquear.jsx`, `database/migracion_desbloqueo_cuenta.sql` | `DesbloqueoServiceTest` (7) | 6: el envío en menos de 3 s depende del servidor SMTP (el correo es síncrono). |
+| RF-041 | Implementado | `B/entity/Acomodacion.java`, `B/services/AcomodacionService.java`, `B/util/TiempoEvaluacion.java`, `B/services/EvaluacionService.java`, `B/controller/AcomodacionController.java`, `F/components/AcomodacionDialogo.jsx`, `F/pages/instructor/NotasCurso.jsx`, `database/migracion_acomodaciones.sql` | `TiempoEvaluacionTest` (6), `AcomodacionServiceTest` (9) | 1: «intentos extra» se guarda pero no tiene efecto, porque las evaluaciones no limitan los intentos (C3). |
+| RF-042 | Implementado | `B/services/SesionService.java` (`renovar`, `segundosRestantes`), `B/security/JwtAuthFilter.java` (`X-Sesion-Restante`), `B/services/EvaluacionService.java` (`ampliar`), `F/components/layout/AvisoSesion.jsx`, `F/pages/student/TomarEvaluacion.jsx` | `AvisoTiempoTest` (7) | 3: sin refresh token; `/auth/refresh` renueva la sesión y reemite el JWT (C6). |
+| RF-049 | Implementado | `B/services/AccesibilidadContenidoService.java`, `B/entity/HallazgoAccesibilidad.java`, `B/exception/PublicacionBloqueadaException.java`, `B/controller/AccesibilidadContenidoController.java`, `F/pages/instructor/PanelAccesibilidad.jsx`, `F/components/ListaHallazgos.jsx`, `database/migracion_verificador_accesibilidad.sql` | `AccesibilidadContenidoServiceTest` (12), `a11y.spec.js` › editor de contenido | 1: el contraste solo se puede medir en estilos HTML en línea; el Markdown no tiene colores (C1). La revisión en vivo es del servidor (cada 700 ms), no axe-core en el navegador. |
+| RF-039 | Implementado | Regla `AUDIO_SIN_TRANSCRIPCION` en `B/services/AccesibilidadContenidoService.java`; ya existía en `B/services/ConformidadAccesibilidad.java` | `TranscripcionPodcastTest` (5) | 4: ofrecer el borrador automático depende de RF-037 (Sprint 9). |
+| RF-048 | Implementado | `F/components/layout/BotonAyuda.jsx`, `F/components/layout/Topbar.jsx`, `F/utils/ayuda.js` | `a11y.spec.js` › ayuda consistente | 2: el Tutor de IA y el contacto con el instructor solo aplican a estudiantes (C8). |
+| RF-032 a RF-038, RF-040, RF-045 a RF-047 | Pendiente (Sprint 9) | — | — | — |
+
+Pruebas automáticas: `./mvnw test` (78 pruebas) y `npm run test:a11y` (9 pantallas con axe, `wcag2a`, `wcag2aa`, `wcag21aa`, `wcag22aa`, sin violaciones serias ni críticas con la API simulada).
