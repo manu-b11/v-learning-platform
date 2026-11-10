@@ -68,9 +68,19 @@ public class AccesibilidadContenidoService {
         return lista;
     }
 
-    /** Medios: video sin subtítulos o sin transcripción (bloqueantes, WCAG 1.2.2 y 1.2.3). */
+    /**
+     * Medios: video sin subtítulos o sin transcripción (bloqueantes, WCAG 1.2.2 y 1.2.3) y, por
+     * RF-039, podcast o audio grabado sin transcripción (bloqueante, WCAG 1.2.1).
+     */
     static List<Hallazgo> reglasDeMedios(FormatoContenido formato, Set<TipoRecursoAccesible> tipos) {
         List<Hallazgo> lista = new ArrayList<>();
+        // RF-039: ningún audio publicado queda sin transcripción.
+        if (formato == FormatoContenido.PODCAST && !tipos.contains(TipoRecursoAccesible.TRANSCRIPCION)) {
+            lista.add(new Hallazgo("AUDIO_SIN_TRANSCRIPCION", "1.2.1", SeveridadHallazgo.BLOQUEANTE,
+                    "El podcast no tiene transcripción.",
+                    "En «Recursos accesibles» agrega una Transcripción con todo lo que se dice (quién habla y qué dice). "
+                            + "La generación automática del borrador llega con RF-037."));
+        }
         if (formato == FormatoContenido.VIDEO) {
             if (!tipos.contains(TipoRecursoAccesible.SUBTITULO)) {
                 lista.add(new Hallazgo("VIDEO_SIN_SUBTITULOS", "1.2.2", SeveridadHallazgo.BLOQUEANTE,
