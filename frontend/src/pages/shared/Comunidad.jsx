@@ -27,6 +27,7 @@ import {
 } from "../../components/ui/index.jsx";
 import ConfirmarDialogo from "../../components/ConfirmarDialogo.jsx";
 import VolverACursos from "../../components/VolverACursos.jsx";
+import BotonDictado from "../../components/BotonDictado.jsx";
 
 function cursosDelRol(rol) {
   if (rol === "ESTUDIANTE") return api.cursos.mios();
@@ -461,6 +462,8 @@ function Sala({ curso, onModerado }) {
           onChange={(e) => setTexto(e.target.value)}
           maxLength={1000}
         />
+        {/* RF-045: dictar el mensaje por voz */}
+        <BotonDictado valor={texto} onCambio={(v) => setTexto(v.slice(0, 1000))} campo="en el mensaje" className="mt-0" />
         <Button
           type="submit"
           icono={Send}
