@@ -43,6 +43,9 @@ public class NotificacionController {
         return servicio.preferencias(u.id());
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary = "Guardar preferencias de notificación (RF-011, RF-047)",
+            description = "resumenDiario y horaResumen (HH:mm) son opcionales: lo no urgente se junta en un resumen diario; "
+                    + "las fechas límite de menos de 24 h y los avisos obligatorios llegan de inmediato.")
     @PutMapping("/preferencias")
     public PreferenciasDto guardar(@AuthenticationPrincipal UsuarioPrincipal u, @Valid @RequestBody PreferenciasRequest req) {
         return servicio.guardarPreferencias(u.id(), req);
