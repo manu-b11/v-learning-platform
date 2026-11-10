@@ -53,6 +53,10 @@ const DASHBOARD = {
     intentos: 2, clasificacion: "EXCELENTE", tipo: "EVALUACION" }],
   pendientes: [{ tipo: "CONTENIDO", id: 1, titulo: "Roles de Scrum", curso: "Metodologías ágiles", cursoId: 5, moduloId: 3 }],
   sugerencias: [], cursosSugeridos: [],
+  resumenes: {
+    avance: "Tienes 1 curso: «Metodologías ágiles» con 40 % de avance.",
+    calificaciones: "Tienes 1 actividad(es) calificada(s) con un promedio de 90 %. Tu mejor resultado es «Quiz de roles» con 90 %.",
+  },
 };
 
 const LECCION = {

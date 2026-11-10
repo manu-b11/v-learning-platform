@@ -7,6 +7,7 @@ import com.elearning.platform.enums.*;
 import com.elearning.platform.repository.*;
 import com.elearning.platform.util.AfinidadVark;
 import com.elearning.platform.util.CorreccionEvaluacion;
+import com.elearning.platform.util.ResumenProgreso;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -155,8 +156,11 @@ public class DashboardService {
 
         Totales totales = new Totales(prog.stream().mapToLong(Progreso::getTiempoConsumido).sum(),
                 prog.stream().filter(p -> p.getEstado() == EstadoProgreso.COMPLETADO).count(), finalizados.size(), promedio, tareasCalificadas);
+        // RF-033: resumen en texto de cada gráfico (tendencia y valor actual).
+        ResumenesProgreso resumenes = new ResumenesProgreso(ResumenProgreso.avance(cursosProg),
+                ResumenProgreso.calificaciones(califs));
         return new DashboardRespuesta(sinActividad, sinActividad ? MENSAJE_MOTIVADOR : null, totales, cursosProg, califs,
-                pendientes, sugerencias, sugeridos);
+                pendientes, sugerencias, sugeridos, resumenes);
     }
 
     private List<CursoResumen> cursosParaEmpezar(List<Inscripcion> insc) {
