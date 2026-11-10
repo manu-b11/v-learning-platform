@@ -52,6 +52,9 @@ CREATE TABLE usuarios (
     notificaciones_habilitadas BOOLEAN NOT NULL DEFAULT TRUE,
     -- [EXT] HU-013 / CU-011: canal preferido (plataforma, correo).
     canal_preferido VARCHAR(15) NOT NULL DEFAULT 'PLATAFORMA',
+    -- RF-047: resumen diario de notificaciones no urgentes (NULL = aún no lo eligió) y su hora.
+    resumen_diario BOOLEAN NULL,
+    hora_resumen TIME(0) NULL,
     -- [EXT] Segundo factor (OTP): obligatorio para INSTRUCTOR y ADMINISTRADOR (la aplicación lo
     --       fuerza por rol); el ESTUDIANTE puede desactivarlo desde Configuración.
     doble_factor_habilitado BOOLEAN NOT NULL DEFAULT TRUE,
@@ -462,6 +465,8 @@ CREATE TABLE perfiles_gamificacion (
     nivel SMALLINT NOT NULL DEFAULT 1,
     -- [EXT] RF-009: modo privado; FALSE = el estudiante no aparece en la tabla pública.
     visible_ranking BOOLEAN NOT NULL DEFAULT TRUE,
+    -- RF-047: pausa los avisos de puntos, insignias y ranking; los puntos se siguen registrando.
+    avisos_pausados BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT uq_perfil_gamificacion_estudiante UNIQUE (estudiante_id),
     CONSTRAINT ck_gamificacion_puntos CHECK (puntos >= 0),
     CONSTRAINT ck_gamificacion_nivel CHECK (nivel >= 1),
@@ -599,6 +604,9 @@ CREATE TABLE notificaciones (
     pospuesta_hasta TIMESTAMP(0) NULL,
     -- [EXT] Ruta de la aplicación a la que lleva el botón "Ir" (p. ej. /logros). NULL = sin destino.
     enlace VARCHAR(300) NULL,
+    -- RF-047: guardada para el resumen diario (se muestra a la hora del resumen) y si es urgente.
+    en_resumen BOOLEAN NOT NULL DEFAULT FALSE,
+    urgente BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT fk_notificacion_usuario FOREIGN KEY (usuario_id)
         REFERENCES usuarios(id) ON UPDATE NO ACTION ON DELETE NO ACTION,
     CONSTRAINT ck_notificaciones_canal CHECK (canal IN ('PLATAFORMA', 'CORREO'))

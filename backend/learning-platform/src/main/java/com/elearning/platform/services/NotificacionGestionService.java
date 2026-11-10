@@ -73,7 +73,13 @@ public class NotificacionGestionService {
     @Transactional(readOnly = true)
     public PreferenciasDto preferencias(Long usuarioId) {
         Usuario u = usuarios.findById(usuarioId).orElseThrow(() -> ApiException.noEncontrado("Usuario no encontrado."));
-        return new PreferenciasDto(u.isNotificacionesHabilitadas(), u.getCanalPreferido());
+        return aPreferencias(u);
+    }
+
+    private static PreferenciasDto aPreferencias(Usuario u) {
+        return new PreferenciasDto(u.isNotificacionesHabilitadas(), u.getCanalPreferido(),
+                Boolean.TRUE.equals(u.getResumenDiario()),
+                u.getHoraResumen() == null ? NotificacionService.HORA_RESUMEN_POR_DEFECTO : u.getHoraResumen());
     }
 
     @Transactional
@@ -81,8 +87,17 @@ public class NotificacionGestionService {
         Usuario u = usuarios.findById(usuarioId).orElseThrow(() -> ApiException.noEncontrado("Usuario no encontrado."));
         u.setNotificacionesHabilitadas(req.habilitadas());
         if (req.canal() != null) u.setCanalPreferido(req.canal());
+        // RF-047: resumen diario y su hora; lo pendiente se reprograma o se libera.
+        if (req.horaResumen() != null) u.setHoraResumen(req.horaResumen().withSecond(0).withNano(0));
+        if (req.resumenDiario() != null) u.setResumenDiario(req.resumenDiario());
         usuarios.save(u);
-        return new PreferenciasDto(u.isNotificacionesHabilitadas(), u.getCanalPreferido());
+        if (Boolean.TRUE.equals(u.getResumenDiario())) {
+            notificaciones.reprogramarResumen(u.getId(),
+                    NotificacionService.proximoResumen(u.getHoraResumen(), LocalDateTime.now()));
+        } else if (req.resumenDiario() != null) {
+            notificaciones.liberarResumen(u.getId());
+        }
+        return aPreferencias(u);
     }
 
     private Notificacion propia(Long usuarioId, Long id) {

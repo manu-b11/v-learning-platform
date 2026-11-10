@@ -121,7 +121,9 @@ public class RecordatorioJob {
                 notificador.notificar(u, titulo,
                         (v.esEvaluacion() ? "La evaluación «" : "La tarea «") + v.titulo() + "» del curso «" + v.curso()
                                 + "» vence el " + v.fechaLimite().format(FECHA) + ". Aún no la has presentado.",
-                        false, v.esEvaluacion() ? "/evaluaciones" : "/cursos/" + v.cursoId());
+                        false, v.esEvaluacion() ? "/evaluaciones" : "/cursos/" + v.cursoId(),
+                        // RF-047: si vence en menos de 24 h no espera al resumen diario.
+                        NotificacionService.esUrgente(v.fechaLimite(), LocalDateTime.now()));
                 n++;
             }
         }

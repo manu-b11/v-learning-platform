@@ -148,6 +148,7 @@ export const api = {
     ver: () => d(client.get("/logros")),
     actividad: (dias = 7) => d(client.get("/logros/actividad", { params: { dias } })),
     privacidad: (mostrarEnRanking) => d(client.put("/logros/privacidad", { mostrarEnRanking })),
+    pausa: (pausada) => d(client.put("/logros/pausa", { pausada })), // RF-047
     ranking: (cursoId) => d(client.get(`/cursos/${cursoId}/ranking`)),
   },
   chat: {
@@ -167,7 +168,8 @@ export const api = {
     leerTodas: () => d(client.patch("/notificaciones/leidas")),
     posponer: (id, opcion) => d(client.post(`/notificaciones/${id}/posponer`, { opcion })),
     preferencias: () => d(client.get("/notificaciones/preferencias")),
-    guardarPreferencias: (habilitadas, canal) => d(client.put("/notificaciones/preferencias", { habilitadas, canal })),
+    guardarPreferencias: (habilitadas, canal, resumenDiario, horaResumen) =>
+      d(client.put("/notificaciones/preferencias", { habilitadas, canal, resumenDiario, horaResumen })),
   },
   tutor: {
     consultar: (pregunta, contenidoId) => d(client.post("/tutor/consultas", { pregunta, contenidoId })),

@@ -32,6 +32,10 @@ public class PerfilGamificacion {
     @Column(name = "visible_ranking", nullable = false)
     private boolean visibleRanking = true;
 
+    /** RF-047: pausa los avisos de puntos, insignias y ranking (los puntos se siguen registrando). */
+    @Column(name = "avisos_pausados", nullable = false)
+    private boolean avisosPausados = false;
+
     public void agregarPuntos(int p) {
         if (p > 0) this.puntos += p;
     }

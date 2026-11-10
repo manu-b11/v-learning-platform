@@ -49,6 +49,14 @@ public class Notificacion {
     @Column(length = 300)
     private String enlace;
 
+    /** RF-047: guardada para el resumen diario (pospuesta hasta la hora del resumen). */
+    @Column(name = "en_resumen", nullable = false)
+    private boolean enResumen = false;
+
+    /** RF-047: urgente (obligatoria o fecha límite en menos de 24 h): nunca va al resumen. */
+    @Column(nullable = false)
+    private boolean urgente = false;
+
     @PrePersist
     void antesDeGuardar() {
         if (fechaCreacion == null) fechaCreacion = LocalDateTime.now();

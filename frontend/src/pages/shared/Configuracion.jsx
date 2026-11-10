@@ -20,6 +20,7 @@ import {
   PageHeader,
   PasswordField,
   SelectField,
+  TextField,
   Toggle,
 } from "../../components/ui/index.jsx";
 import VolverACursos from "../../components/VolverACursos.jsx";
@@ -33,6 +34,9 @@ function Notificaciones() {
   );
   const [habilitadas, setHabilitadas] = useState(true);
   const [canal, setCanal] = useState("PLATAFORMA");
+  // RF-047: resumen diario de avisos no urgentes y su hora.
+  const [resumen, setResumen] = useState(false);
+  const [hora, setHora] = useState("18:00");
   const [trabajando, setTrabajando] = useState(false);
   const [sonido, setSonido] = useState(sonidoActivado);
   const cambiarSonido = (v) => {
@@ -44,6 +48,8 @@ function Notificaciones() {
     if (datos) {
       setHabilitadas(datos.habilitadas);
       setCanal(datos.canal ?? "PLATAFORMA");
+      setResumen(Boolean(datos.resumenDiario));
+      setHora(String(datos.horaResumen ?? "18:00").slice(0, 5));
     }
   }, [datos]);
   if (cargando && !datos) return <Cargando />;
@@ -52,7 +58,7 @@ function Notificaciones() {
   const guardar = async () => {
     setTrabajando(true);
     try {
-      await api.notificaciones.guardarPreferencias(habilitadas, canal);
+      await api.notificaciones.guardarPreferencias(habilitadas, canal, resumen, hora || "18:00");
       avisar("Guardamos tus preferencias de notificación.", "ok");
     } catch (e) {
       avisar(mensajeError(e), "error");
@@ -87,6 +93,17 @@ function Notificaciones() {
         <option value="PLATAFORMA">Solo en la plataforma</option>
         <option value="CORREO">Plataforma y correo institucional</option>
       </SelectField>
+      <Toggle
+        label="Resumen diario"
+        descripcion="Junta los avisos que no son urgentes y te los muestra una vez al día. Las fechas límite de menos de 24 horas siguen llegando de inmediato."
+        checked={resumen}
+        disabled={!habilitadas}
+        onChange={setResumen}
+      />
+      {resumen && (
+        <TextField label="Hora del resumen" type="time" value={hora} onChange={(e) => setHora(e.target.value)}
+          className="mb-4 max-w-40" ayuda="Lo enviamos con un margen de 5 minutos." />
+      )}
       <Button cargando={trabajando} onClick={guardar}>
         Guardar notificaciones
       </Button>

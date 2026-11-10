@@ -20,7 +20,10 @@ public final class GamificacionDtos {
 
     public record LogrosRespuesta(int puntos, int nivel, int puntosSiguienteNivel, int progresoNivelPorcentaje,
                                   boolean mostrarEnRanking, List<InsigniaObtenidaDto> insignias,
-                                  List<InsigniaPendienteDto> pendientes) {}
+                                  List<InsigniaPendienteDto> pendientes, boolean avisosPausados) {}
+
+    /** RF-047: pausar o reanudar los avisos de gamificación. */
+    public record PausaGamificacionRequest(@NotNull(message = "Indica si quieres pausar los avisos.") Boolean pausada) {}
 
     public record PrivacidadRequest(@NotNull(message = "Indica si quieres aparecer en la clasificación.") Boolean mostrarEnRanking) {}
 
