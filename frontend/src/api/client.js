@@ -199,6 +199,16 @@ export const api = {
     crearRecurso: (contenidoId, datos) => d(client.post(`/contenidos/${contenidoId}/recursos`, datos)),
     borrarRecurso: (id) => d(client.delete(`/recursos/${id}`)),
     desfaseRecurso: (id, desfaseMs) => d(client.patch(`/recursos/${id}/desfase`, { desfaseMs })), // RF-040
+    // RF-037: borrador de subtítulos automáticos
+    subtitulos: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/subtitulos/borrador`)),
+    generarSubtitulos: (contenidoId) => d(client.post(`/contenidos/${contenidoId}/subtitulos/borrador`)),
+    editarSubtitulos: (contenidoId, lineas) => d(client.put(`/contenidos/${contenidoId}/subtitulos/borrador`, { lineas })),
+    aprobarSubtitulos: (contenidoId) => d(client.post(`/contenidos/${contenidoId}/subtitulos/borrador/aprobar`)),
+    subirSubtitulos: (contenidoId, archivo) => {
+      const datos = new FormData();
+      datos.append("archivo", archivo);
+      return d(client.post(`/contenidos/${contenidoId}/subtitulos/archivo`, datos));
+    },
     conformidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/conformidad`)),
     // RF-049: verificador de accesibilidad del contenido
     accesibilidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/accesibilidad`)),

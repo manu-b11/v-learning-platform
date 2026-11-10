@@ -37,6 +37,7 @@ public class InstructorCursoService {
     private final AuditoriaService auditoria;
     private final NotificacionService notificaciones;
     private final AccesibilidadContenidoService verificador;
+    private final SubtitulosService subtitulos;
 
     @Transactional(readOnly = true)
     public List<CursoResumen> listar(Long instructorId) {
@@ -142,6 +143,7 @@ public class InstructorCursoService {
         aplicar(c, req);
         c = contenidos.save(c);
         auditoria.registrar(instructorId, "CONTENIDO_CREADO", "contenidos/" + c.getId(), ResultadoAuditoria.PERMITIDO, ip);
+        subtitulos.alGuardarContenido(c, instructorId); // RF-037: borrador automático de subtítulos
         return item(c, List.of());
     }
 
@@ -152,6 +154,7 @@ public class InstructorCursoService {
         aplicar(c, req);
         contenidos.save(c);
         auditoria.registrar(instructorId, "CONTENIDO_ACTUALIZADO", "contenidos/" + contenidoId, ResultadoAuditoria.PERMITIDO, ip);
+        subtitulos.alGuardarContenido(c, instructorId); // RF-037: si cambió el medio, nuevo borrador
         return item(c, recursos.findByContenidoIdOrderByIdAsc(contenidoId));
     }
 

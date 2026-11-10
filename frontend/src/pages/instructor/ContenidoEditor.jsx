@@ -6,6 +6,7 @@ import { useAsync } from "../../utils/useAsync.js";
 import { Banner, Button, Cargando, EstadoError, SelectField, TextField } from "../../components/ui/index.jsx";
 import RecursosEditor from "./RecursosEditor.jsx";
 import PanelAccesibilidad from "./PanelAccesibilidad.jsx";
+import SubtitulosBorrador from "./SubtitulosBorrador.jsx";
 import ListaHallazgos from "../../components/ListaHallazgos.jsx";
 import { hallazgosDeError } from "../../utils/wcag.js";
 import { FORMATOS } from "./constantes.js";
@@ -163,7 +164,11 @@ export default function ContenidoEditor({ moduloId, contenido, onGuardado, onCan
       <FormularioContenido moduloId={moduloId} contenido={inicial} onGuardado={onGuardado} onCancelar={onCancelar} version={version} />
       {editando && (
         <>
-          <RecursosEditor contenidoId={contenido.id} urlOriginal={inicial?.urlRecurso} formato={inicial?.formato}
+          {/* RF-037: borrador de subtítulos para videos y podcasts. */}
+          {["VIDEO", "PODCAST"].includes(inicial?.formato) && inicial?.urlRecurso && (
+            <SubtitulosBorrador contenidoId={contenido.id} onAprobado={() => { setVersion((v) => v + 1); onCambio?.(); }} />
+          )}
+          <RecursosEditor contenidoId={contenido.id} urlOriginal={inicial?.urlRecurso} formato={inicial?.formato} refresco={version}
             onCambio={() => { setVersion((v) => v + 1); onCambio?.(); }} />
           <Publicacion contenidoId={contenido.id} publicado={publicado} refresco={version}
             onCambio={(p) => { setPublicado(p); onCambio?.(); }} />

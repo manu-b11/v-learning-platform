@@ -117,9 +117,9 @@ function FormularioRecurso({ contenidoId, onAgregado }) {
 }
 
 /** Lista y gestiona los recursos accesibles de un contenido (subtítulos, transcripción, etc.). */
-export default function RecursosEditor({ contenidoId, onCambio, urlOriginal, formato }) {
+export default function RecursosEditor({ contenidoId, onCambio, urlOriginal, formato, refresco = 0 }) {
   const { avisar } = useNotif();
-  const { datos: recursos, cargando, error, recargar } = useAsync(() => api.instructor.recursos(contenidoId), [contenidoId]);
+  const { datos: recursos, cargando, error, recargar } = useAsync(() => api.instructor.recursos(contenidoId), [contenidoId, refresco]);
   const [aBorrar, setABorrar] = useState(null);
 
   const cambio = async () => { await recargar(); onCambio?.(); };

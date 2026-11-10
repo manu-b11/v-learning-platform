@@ -48,7 +48,7 @@ class LenguaSenasTest {
         AuditoriaService auditoria = mock(AuditoriaService.class);
         InstructorCursoService s = new InstructorCursoService(acceso, mock(CursoRepository.class), mock(ModuloRepository.class),
                 mock(ContenidoRepository.class), recursos, mock(EvaluacionRepository.class), mock(InstructorRepository.class),
-                auditoria, mock(NotificacionService.class), mock(AccesibilidadContenidoService.class));
+                auditoria, mock(NotificacionService.class), mock(AccesibilidadContenidoService.class), mock(SubtitulosService.class));
         RecursoAccesible r = new RecursoAccesible();
         r.setId(9L);
         r.setTipo(TipoRecursoAccesible.LENGUA_SENAS);
@@ -69,7 +69,7 @@ class LenguaSenasTest {
         InstructorCursoService s = new InstructorCursoService(mock(AccesoService.class), mock(CursoRepository.class),
                 mock(ModuloRepository.class), mock(ContenidoRepository.class), recursos, mock(EvaluacionRepository.class),
                 mock(InstructorRepository.class), mock(AuditoriaService.class), mock(NotificacionService.class),
-                mock(AccesibilidadContenidoService.class));
+                mock(AccesibilidadContenidoService.class), mock(SubtitulosService.class));
         RecursoAccesible r = new RecursoAccesible();
         r.setTipo(TipoRecursoAccesible.SUBTITULO);
         r.setContenido(contenido(FormatoContenido.VIDEO));
