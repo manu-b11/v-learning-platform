@@ -46,7 +46,7 @@ export default function PanelAccesibilidad({ contenidoId, formato, urlRecurso, c
       <p role="status" aria-live="polite" className="font-semibold text-strong">
         {revisando && !informe ? "Revisando…" : resumen}
       </p>
-      {informe && <ListaHallazgos hallazgos={informe.hallazgos} />}
+      {informe && <ListaHallazgos hallazgos={informe.hallazgos} ofrecerBorrador={false} />}
     </section>
   );
 }

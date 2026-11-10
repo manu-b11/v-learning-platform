@@ -79,13 +79,14 @@ public class AccesibilidadContenidoService {
             lista.add(new Hallazgo("AUDIO_SIN_TRANSCRIPCION", "1.2.1", SeveridadHallazgo.BLOQUEANTE,
                     "El podcast no tiene transcripción.",
                     "En «Recursos accesibles» agrega una Transcripción con todo lo que se dice (quién habla y qué dice). "
-                            + "La generación automática del borrador llega con RF-037."));
+                            + "También puedes generar el borrador automático (RF-037), revisarlo y aprobarlo."));
         }
         if (formato == FormatoContenido.VIDEO) {
             if (!tipos.contains(TipoRecursoAccesible.SUBTITULO)) {
                 lista.add(new Hallazgo("VIDEO_SIN_SUBTITULOS", "1.2.2", SeveridadHallazgo.BLOQUEANTE,
                         "El video no tiene subtítulos.",
-                        "En «Recursos accesibles» agrega un recurso de tipo Subtítulos con el enlace al archivo .vtt."));
+                        "Genera el borrador automático de subtítulos (RF-037), revísalo y apruébalo, o agrega en "
+                                + "«Recursos accesibles» un recurso de tipo Subtítulos con el enlace al archivo .vtt."));
             }
             if (!tipos.contains(TipoRecursoAccesible.TRANSCRIPCION)) {
                 lista.add(new Hallazgo("VIDEO_SIN_TRANSCRIPCION", "1.2.3", SeveridadHallazgo.BLOQUEANTE,
@@ -196,6 +197,14 @@ public class AccesibilidadContenidoService {
             informes.add(verificarYGuardar(c, porContenido.getOrDefault(c.getId(), List.of())));
         }
         return informes;
+    }
+
+    /** RF-039 (criterio 4) y RF-037: reglas que se resuelven generando el borrador automático. */
+    public static final Set<String> REGLAS_CON_BORRADOR = Set.of("AUDIO_SIN_TRANSCRIPCION", "VIDEO_SIN_SUBTITULOS",
+            "VIDEO_SIN_TRANSCRIPCION");
+
+    public static boolean ofreceBorradorAutomatico(String regla) {
+        return REGLAS_CON_BORRADOR.contains(regla);
     }
 
     /** RF-049: solo los hallazgos bloqueantes de varios informes. */

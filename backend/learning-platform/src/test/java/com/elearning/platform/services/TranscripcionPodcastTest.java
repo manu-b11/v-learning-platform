@@ -25,6 +25,16 @@ class TranscripcionPodcastTest {
         assertEquals(SeveridadHallazgo.BLOQUEANTE, h.severidad());
         assertEquals("1.2.1", h.criterioWcag());
         assertFalse(h.comoCorregir().isBlank());
+        // HU-039 criterio 4: se ofrece generar el borrador automático (RF-037).
+        assertTrue(h.comoCorregir().contains("borrador automático"));
+    }
+
+    /** HU-039 criterio 4: estas reglas permiten ofrecer el botón «Generar borrador automático». */
+    @Test
+    void lasReglasDeMediosOfrecenElBorradorAutomatico() {
+        assertTrue(AccesibilidadContenidoService.ofreceBorradorAutomatico("AUDIO_SIN_TRANSCRIPCION"));
+        assertTrue(AccesibilidadContenidoService.ofreceBorradorAutomatico("VIDEO_SIN_SUBTITULOS"));
+        assertFalse(AccesibilidadContenidoService.ofreceBorradorAutomatico("IMAGEN_SIN_ALT"));
     }
 
     @Test

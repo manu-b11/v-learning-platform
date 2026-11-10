@@ -55,3 +55,29 @@ test("el instructor corrige y aprueba el borrador de subtítulos", async ({ page
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
   expect(r.violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
 });
+
+/** RF-039 (HU-039, criterio 4): al bloquearse la publicación se ofrece generar el borrador automático. */
+test("si un podcast no tiene transcripción, se ofrece generar el borrador al publicar", async ({ page }) => {
+  await conSesion(page, INSTRUCTOR);
+  const json = (status, body) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
+  let pedido = false;
+  await page.route((u) => u.pathname === "/api/instructor/cursos/5", (r) => r.fulfill(json(200, CURSO_VIDEO)));
+  await page.route((u) => u.pathname === "/api/instructor/cursos/5/publicar", (r) => r.fulfill(json(422, {
+    codigo: "CURSO_NO_CONFORME", mensaje: "No se puede publicar el curso: 1 contenido(s) tienen problemas de accesibilidad que hay que corregir.",
+    hallazgos: [{ contenidoId: 8, contenido: "Podcast 1", regla: "AUDIO_SIN_TRANSCRIPCION", criterioWcag: "1.2.1",
+      severidad: "BLOQUEANTE", mensaje: "El podcast no tiene transcripción.", comoCorregir: "Genera el borrador automático." }],
+  })));
+  await page.route((u) => u.pathname === "/api/contenidos/8/subtitulos/borrador", (r) => {
+    pedido = r.request().method() === "POST";
+    return r.fulfill(json(202, { contenidoId: 8, estado: "PENDIENTE", origen: "AUTOMATICO", lineas: [], medioCambio: false }));
+  });
+
+  await page.goto("/cursos/5/editar");
+  await page.getByRole("button", { name: "Publicar curso" }).click();
+  await page.getByRole("button", { name: "Sí, publicar" }).click();
+  await page.getByRole("button", { name: "Cancelar" }).click();
+  await expect(page.getByRole("heading", { name: "Qué corregir para publicar el curso" })).toBeVisible();
+  await page.getByRole("button", { name: "Generar borrador automático de «Podcast 1»" }).click();
+  await expect.poll(() => pedido).toBe(true);
+  await expect(page.getByText(/Pedimos el borrador/)).toBeVisible();
+});
