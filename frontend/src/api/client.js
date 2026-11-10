@@ -24,7 +24,14 @@ client.interceptors.request.use((config) => {
 
 /** Si la sesión caduca, se limpia y se avisa a la app para que lleve al login. */
 client.interceptors.response.use(
-  (r) => r,
+  (r) => {
+    // RF-042: segundos que quedan de sesión, para avisar 2 minutos antes (AvisoSesion).
+    const restante = r.headers?.["x-sesion-restante"];
+    if (restante != null && !(r.config?.url ?? "").startsWith("/auth/refresh")) {
+      window.dispatchEvent(new CustomEvent("vl:sesion-restante", { detail: Number(restante) }));
+    }
+    return r;
+  },
   (error) => {
     const status = error.response?.status;
     const ruta = error.config?.url ?? "";
@@ -84,12 +91,16 @@ export const api = {
   auth: {
     login: (correo, password) => d(client.post("/auth/login", { correo, password })),
     verificarOtp: (correo, codigo) => d(client.post("/auth/otp/verificar", { correo, codigo })),
+    reenviarOtp: (correo) => d(client.post("/auth/otp/reenviar", { correo })),
+    desbloquear: (tokenDes) => d(client.post("/auth/desbloquear", { token: tokenDes })),
+    solicitarDesbloqueo: (correo) => d(client.post("/auth/desbloqueo/solicitar", { correo })),
     recuperar: (correo) => d(client.post("/auth/recuperar", { correo })),
     restablecer: (tokenRec, nuevaPassword) => d(client.post("/auth/restablecer", { token: tokenRec, nuevaPassword })),
     me: () => d(client.get("/auth/me")),
     primerAcceso: (passwordActual, nuevaPassword) => d(client.post("/auth/primer-acceso", { passwordActual, nuevaPassword })),
     dobleFactor: (habilitado, password) => d(client.put("/auth/doble-factor", { habilitado, password })),
     logout: () => d(client.post("/auth/logout")),
+    refresh: () => d(client.post("/auth/refresh")),
   },
   vark: {
     preguntas: () => d(client.get("/vark/preguntas")),
@@ -125,6 +136,7 @@ export const api = {
     historial: (id) => d(client.get(`/evaluaciones/${id}/historial`)),
     guardar: (intentoId, preguntaId, valor) => d(client.put(`/intentos/${intentoId}/respuestas/${preguntaId}`, { valor })),
     finalizar: (intentoId) => d(client.post(`/intentos/${intentoId}/finalizar`)),
+    ampliar: (intentoId) => d(client.post(`/intentos/${intentoId}/ampliar`)),
     resultado: (intentoId) => d(client.get(`/intentos/${intentoId}/resultado`)),
   },
   progreso: {
@@ -183,6 +195,9 @@ export const api = {
     crearRecurso: (contenidoId, datos) => d(client.post(`/contenidos/${contenidoId}/recursos`, datos)),
     borrarRecurso: (id) => d(client.delete(`/recursos/${id}`)),
     conformidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/conformidad`)),
+    // RF-049: verificador de accesibilidad del contenido
+    accesibilidad: (contenidoId) => d(client.get(`/contenidos/${contenidoId}/accesibilidad`)),
+    verificarAccesibilidad: (contenidoId, datos) => d(client.post(`/contenidos/${contenidoId}/accesibilidad/verificar`, datos)),
     publicarContenido: (id) => d(client.post(`/contenidos/${id}/publicar`)),
     despublicarContenido: (id) => d(client.post(`/contenidos/${id}/despublicar`)),
     crearEvaluacion: (moduloId, datos) => d(client.post(`/modulos/${moduloId}/evaluaciones`, datos)),
@@ -203,6 +218,12 @@ export const api = {
   },
   notas: {
     delCurso: (cursoId) => d(client.get(`/cursos/${cursoId}/notas`)),
+  },
+  // RF-041: acomodaciones de evaluación por estudiante
+  acomodaciones: {
+    listar: (cursoId) => d(client.get(`/cursos/${cursoId}/acomodaciones`)),
+    asignar: (cursoId, datos) => d(client.post(`/cursos/${cursoId}/acomodaciones`, datos)),
+    quitar: (cursoId, id) => d(client.delete(`/cursos/${cursoId}/acomodaciones/${id}`)),
   },
   informes: {
     vista: (filtros) => d(client.post("/informes/vista", filtros)),

@@ -36,6 +36,7 @@ public class AuthService {
     private static final String ACCION_LOGIN_FALLIDO = "LOGIN_FALLIDO";
     private static final String ACCION_OTP_FALLIDO = "OTP_FALLIDO";
     private static final int MAX_OTP_FALLIDOS = 5;
+    private static final String ACCION_OTP_REENVIADO = "OTP_REENVIADO";
 
     private final UsuarioRepository usuarios;
     private final PasswordEncoder passwordEncoder;
@@ -49,6 +50,7 @@ public class AuthService {
     private final PerfilAccesibilidadRepository perfilesAccesibilidad;
     private final EstudianteRepository estudiantes;
     private final VlearningProperties props;
+    private final DesbloqueoService desbloqueo;
     private final String hashFalso;
 
     public AuthService(UsuarioRepository usuarios, PasswordEncoder passwordEncoder, OtpService otpService,
@@ -56,7 +58,8 @@ public class AuthService {
                        RegistroAuditoriaRepository registros, NotificacionService notificaciones,
                        PerfilAprendizajeRepository perfilesAprendizaje,
                        PerfilAccesibilidadRepository perfilesAccesibilidad,
-                       EstudianteRepository estudiantes, VlearningProperties props) {
+                       EstudianteRepository estudiantes, VlearningProperties props,
+                       DesbloqueoService desbloqueo) {
         this.usuarios = usuarios;
         this.passwordEncoder = passwordEncoder;
         this.otpService = otpService;
@@ -69,6 +72,7 @@ public class AuthService {
         this.perfilesAccesibilidad = perfilesAccesibilidad;
         this.estudiantes = estudiantes;
         this.props = props;
+        this.desbloqueo = desbloqueo;
         // Para gastar el mismo tiempo cuando el correo no existe (evita enumerar cuentas).
         this.hashFalso = passwordEncoder.encode(UUID.randomUUID().toString());
     }
@@ -105,20 +109,71 @@ public class AuthService {
                     abrirSesion(u, correoNormalizado, ip));
         }
 
+        String codigo = enviarCodigo(u, ip);
+        auditoria.registrar(u.getId(), "LOGIN_CREDENCIALES_OK", correoNormalizado, ResultadoAuditoria.PERMITIDO, ip);
+        return new LoginRespuesta("OTP_REQUERIDO",
+                "Enviamos un código de 6 números a tu correo. Vence en " + otpService.minutosVigencia() + " minutos.",
+                props.dev().exponerSecretos() ? codigo : null, null);
+    }
+
+    /**
+     * RF-044: reenvía el código sin volver a pedir la contraseña. Solo funciona si la persona validó
+     * su contraseña hace poco (hay un código pendiente); si no, responde un mensaje genérico para no
+     * revelar qué cuentas existen.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public LoginRespuesta reenviarOtp(ReenviarOtpRequest req, String ip) {
+        String correoNormalizado = req.correo().trim().toLowerCase();
+        Usuario u = usuarios.findByCorreoInstitucionalIgnoreCase(correoNormalizado).orElse(null);
+        LoginRespuesta generica = new LoginRespuesta("OTP_REQUERIDO",
+                "Si tu inicio de sesión sigue en curso, te enviamos un código nuevo.", null, null);
+        if (u == null || u.getEstado() == EstadoUsuario.INACTIVO || u.getEstado() == EstadoUsuario.BLOQUEADO
+                || u.estaBloqueadoTemporalmente() || !u.requiereDobleFactor()) {
+            auditoria.registrar(u == null ? null : u.getId(), ACCION_OTP_REENVIADO, correoNormalizado,
+                    ResultadoAuditoria.DENEGADO, ip);
+            return generica;
+        }
+        LocalDateTime ahora = LocalDateTime.now();
+        long reenvios = registros.countByUsuarioIdAndAccionAndResultadoAndFechaAfter(u.getId(), ACCION_OTP_REENVIADO,
+                ResultadoAuditoria.PERMITIDO, ahora.minusMinutes(OtpService.VENTANA_REENVIO_MINUTOS));
+        OtpService.Reenvio decision = OtpService.politicaReenvio(
+                otpService.inicioCodigoVigente(u).orElse(null), reenvios, ahora);
+        switch (decision) {
+            case SIN_DESAFIO -> {
+                auditoria.registrar(u.getId(), ACCION_OTP_REENVIADO, "sin inicio de sesión reciente",
+                        ResultadoAuditoria.DENEGADO, ip);
+                return generica;
+            }
+            case ESPERAR -> throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "REENVIO_MUY_PRONTO",
+                    "Espera un minuto antes de pedir otro código. Revisa también tu carpeta de correo no deseado.");
+            case LIMITE -> {
+                auditoria.registrar(u.getId(), ACCION_OTP_REENVIADO, "límite de reenvíos",
+                        ResultadoAuditoria.DENEGADO, ip);
+                otpService.invalidar(u);
+                throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "REENVIO_LIMITE",
+                        "Pediste demasiados códigos. Vuelve a iniciar sesión con tu correo y contraseña.");
+            }
+            default -> { }
+        }
+        String codigo = enviarCodigo(u, ip);
+        auditoria.registrar(u.getId(), ACCION_OTP_REENVIADO, correoNormalizado, ResultadoAuditoria.PERMITIDO, ip);
+        return new LoginRespuesta("OTP_REQUERIDO",
+                "Te enviamos un código nuevo. Vence en " + otpService.minutosVigencia() + " minutos.",
+                props.dev().exponerSecretos() ? codigo : null, null);
+    }
+
+    /** Genera el código y lo envía por correo; sin correo y sin modo desarrollo, lo invalida y responde 503. */
+    private String enviarCodigo(Usuario u, String ip) {
         String codigo = otpService.generar(u, ip);
         String cuerpo = "Tu código de verificación de V-Learning es " + codigo + ". Vence en "
-                + props.otp().minutosValidez() + " minutos. Si no fuiste tú, ignora este mensaje.";
+                + otpService.minutosVigencia() + " minutos. Si no fuiste tú, ignora este mensaje.";
         boolean enviado = correo.enviar(u.getCorreoInstitucional(), "Tu código de verificación", cuerpo);
-        boolean exponer = props.dev().exponerSecretos();
-        if (!enviado && !exponer) {
+        if (!enviado && !props.dev().exponerSecretos()) {
             otpService.invalidar(u);
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "CORREO_NO_DISPONIBLE",
                     "No pudimos enviar el código a tu correo. Inténtalo más tarde o contacta al administrador.");
         }
-        auditoria.registrar(u.getId(), "LOGIN_CREDENCIALES_OK", correoNormalizado, ResultadoAuditoria.PERMITIDO, ip);
-        return new LoginRespuesta("OTP_REQUERIDO",
-                "Enviamos un código de 6 números a tu correo. Vence en " + props.otp().minutosValidez() + " minutos.",
-                exponer ? codigo : null, null);
+        return codigo;
     }
 
     @Transactional(noRollbackFor = ApiException.class)
@@ -145,6 +200,20 @@ public class AuthService {
         }
 
         return abrirSesion(u, correoNormalizado, ip);
+    }
+
+    /** RF-042: amplía la sesión al responder al aviso de tiempo. */
+    @Transactional
+    public RenovacionRespuesta renovarSesion(UsuarioPrincipal principal, String ip) {
+        Usuario u = usuarios.findById(principal.id())
+                .orElseThrow(() -> ApiException.noAutenticado("NO_AUTENTICADO", "Tu sesión no es válida."));
+        SesionService.TokenEmitido emitido = sesiones.renovar(principal.sesionId(), u)
+                .orElseThrow(() -> ApiException.noAutenticado("SESION_EXPIRADA", "Tu sesión terminó. Inicia sesión de nuevo."));
+        auditoria.registrar(u.getId(), "SESION_RENOVADA", "sesiones/" + principal.sesionId(), ResultadoAuditoria.PERMITIDO, ip);
+        long restantes = SesionService.segundosRestantes(emitido.expiraPorInactividad(),
+                java.time.Instant.now().plus(props.jwt().expiracionHoras(), java.time.temporal.ChronoUnit.HOURS),
+                java.time.Instant.now());
+        return new RenovacionRespuesta(emitido.token(), "Bearer", restantes);
     }
 
     /** Cierra el flujo de autenticación: reinicia contadores, emite el JWT y audita. */
@@ -251,10 +320,8 @@ public class AuthService {
             usuarios.save(u);
             auditoria.registrar(u.getId(), "BLOQUEO_TEMPORAL", "demasiados intentos fallidos",
                     ResultadoAuditoria.DENEGADO, ip);
-            notificaciones.notificarPorCorreo(u, "Tu cuenta fue bloqueada temporalmente",
-                    "Detectamos " + bloqueo.intentosMaximos() + " intentos fallidos de inicio de sesión. "
-                            + "Tu cuenta estará bloqueada " + bloqueo.bloqueoMinutos() + " minutos. "
-                            + "Si no fuiste tú, cambia tu contraseña cuando puedas entrar.");
+            // RF-043: enlace de desbloqueo al correo (o desbloqueo por el administrador tras 3 bloqueos en 24 h).
+            desbloqueo.alBloquear(u, ip);
             throw cuentaBloqueada(u);
         }
     }
@@ -276,10 +343,15 @@ public class AuthService {
     }
 
     private static ApiException cuentaBloqueada(Usuario u) {
+        if (DesbloqueoService.requiereAdministrador(u, LocalDateTime.now())) {
+            return new ApiException(HttpStatus.LOCKED, "CUENTA_BLOQUEADA_ADMINISTRADOR",
+                    "Tu cuenta está bloqueada. Solo un administrador puede desbloquearla.");
+        }
         if (u.getBloqueadoHasta() != null) {
             long minutos = Math.max(1, Duration.between(LocalDateTime.now(), u.getBloqueadoHasta()).toMinutes() + 1);
             return new ApiException(HttpStatus.LOCKED, "CUENTA_BLOQUEADA",
-                    "Tu cuenta está bloqueada temporalmente. Inténtalo de nuevo en unos " + minutos + " minutos.");
+                    "Tu cuenta está bloqueada temporalmente. Te enviamos a tu correo un enlace para desbloquearla, "
+                            + "o inténtalo de nuevo en unos " + minutos + " minutos.");
         }
         return new ApiException(HttpStatus.LOCKED, "CUENTA_BLOQUEADA",
                 "Tu cuenta está bloqueada. Contacta al administrador.");

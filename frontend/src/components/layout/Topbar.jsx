@@ -13,6 +13,7 @@ import { api } from "../../api/client.js";
 import { fmtNumero, ROL_TEXTO } from "../../utils/format.js";
 import { cx } from "../../utils/cx.js";
 import { NotificationBell } from "./NotificationBell.jsx";
+import { BotonAyuda } from "./BotonAyuda.jsx";
 
 export function ChipPuntos() {
   const [puntos, setPuntos] = useState(null);
@@ -120,6 +121,8 @@ export function Topbar({
         </div>
       </form>
       <div className="ml-auto flex items-center gap-2 md:gap-3">
+        {/* RF-048: la ayuda va siempre primero, en la misma posición en todas las páginas. */}
+        <BotonAyuda />
         {usuario.rol === "ESTUDIANTE" && <ChipPuntos />}
         <div
           className={cx(

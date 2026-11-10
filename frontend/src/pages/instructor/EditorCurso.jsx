@@ -10,6 +10,8 @@ import ConfirmarDialogo from "../../components/ConfirmarDialogo.jsx";
 import CampoPortada from "../../components/CampoPortada.jsx";
 import InscribirEstudiantes from "../../components/InscribirEstudiantes.jsx";
 import ModuloEditor from "./ModuloEditor.jsx";
+import ListaHallazgos from "../../components/ListaHallazgos.jsx";
+import { hallazgosDeError } from "../../utils/wcag.js";
 import ContenidoEditor from "./ContenidoEditor.jsx";
 import { FormularioEvaluacion, FormularioPregunta } from "./EvaluacionEditor.jsx";
 import { tonoEstadoCurso } from "./constantes.js";
@@ -204,6 +206,7 @@ export default function EditorCurso() {
     if (el) el.scrollIntoView({ block: "start" });
   }, [curso, hash, pestana]);
   const [confirmar, setConfirmar] = useState(null); // 'publicar' | 'archivar'
+  const [hallazgosCurso, setHallazgosCurso] = useState(null); // RF-049: lo que bloqueó la publicación
 
   if (cargando && !curso) return <Cargando texto="Cargando el curso…" />;
   if (error && !curso) return <EstadoError mensaje={error} onReintentar={recargar} />;
@@ -211,7 +214,13 @@ export default function EditorCurso() {
 
   const accion = async () => {
     if (confirmar === "publicar") {
-      await api.instructor.publicarCurso(curso.id);
+      setHallazgosCurso(null);
+      try {
+        await api.instructor.publicarCurso(curso.id);
+      } catch (err) {
+        setHallazgosCurso(hallazgosDeError(err));
+        throw err;
+      }
       avisar("Curso publicado. Los estudiantes ya pueden inscribirse.", "ok");
     } else {
       await api.instructor.archivarCurso(curso.id);
@@ -235,6 +244,13 @@ export default function EditorCurso() {
           </>
         )} />
 
+      {hallazgosCurso?.length > 0 && (
+        <section aria-labelledby="h-bloqueo" className="mb-6 grid gap-3">
+          <h2 id="h-bloqueo" className="text-xl">Qué corregir para publicar el curso</h2>
+          <p>La revisión de accesibilidad encontró estos problemas en contenidos publicados. Corrígelos en cada contenido y vuelve a publicar.</p>
+          <ListaHallazgos hallazgos={hallazgosCurso} mostrarContenido />
+        </section>
+      )}
       <Pestanas etiqueta="Secciones del curso" activa={pestana} onCambiar={setPestana} pestanas={[
         { id: "contenido", texto: "Contenido" }, { id: "evaluaciones", texto: "Evaluaciones y tareas" },
         { id: "estudiantes", texto: "Estudiantes" }, { id: "datos", texto: "Datos del curso" }]} />
@@ -255,7 +271,7 @@ export default function EditorCurso() {
         titulo={confirmar === "publicar" ? "¿Publicar el curso?" : "¿Archivar el curso?"}
         textoConfirmar={confirmar === "publicar" ? "Sí, publicar" : "Sí, archivar"}>
         {confirmar === "publicar"
-          ? <p>El curso quedará visible para los estudiantes. El servidor revisará que tenga contenido publicado y conforme.</p>
+          ? <p>El curso quedará visible para los estudiantes. El servidor revisará que tenga contenido publicado y que pase la revisión de accesibilidad.</p>
           : <p>Los estudiantes dejarán de ver el curso en el catálogo.</p>}
       </ConfirmarDialogo>
     </>

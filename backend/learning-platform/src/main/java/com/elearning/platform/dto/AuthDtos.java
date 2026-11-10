@@ -22,6 +22,10 @@ public final class AuthDtos {
             @NotBlank(message = "Escribe tu correo institucional.") @Email(message = "El correo no tiene un formato válido.") String correo,
             @NotBlank(message = "Escribe el código.") @Pattern(regexp = "\\d{6}", message = "El código tiene 6 números.") String codigo) {}
 
+    /** RF-044: pedir un código nuevo sin repetir la contraseña. */
+    public record ReenviarOtpRequest(
+            @NotBlank(message = "Escribe tu correo institucional.") @Email(message = "El correo no tiene un formato válido.") String correo) {}
+
     /**
      * estado = OTP_REQUERIDO (hay que verificar el código) o SESION_INICIADA (estudiante sin doble
      * factor: la sesión viene en "sesion"). codigoOtp solo se devuelve con vlearning.dev.exponer-secretos=true.
@@ -49,6 +53,16 @@ public final class AuthDtos {
 
     public record MensajeRespuesta(String mensaje) {}
 
+    /** RF-043: pedir un enlace nuevo de desbloqueo. */
+    public record DesbloqueoSolicitudRequest(
+            @NotBlank(message = "Escribe tu correo institucional.") @Email(message = "El correo no tiene un formato válido.") String correo) {}
+
+    /** RF-043: canjear el enlace de desbloqueo. */
+    public record DesbloquearRequest(@NotBlank(message = "Falta el enlace de desbloqueo.") String token) {}
+
+    /** RF-043: enlaceDesbloqueo solo se devuelve con vlearning.dev.exponer-secretos=true. */
+    public record DesbloqueoRespuesta(String mensaje, String enlaceDesbloqueo) {}
+
     /** Usuario actual y banderas de onboarding (null = no aplica al rol). programaAcademico solo para estudiantes. */
     public record PerfilActual(
             Long id,
@@ -62,6 +76,9 @@ public final class AuthDtos {
             String programaAcademico,
             boolean dobleFactorHabilitado,
             boolean dobleFactorObligatorio) {}
+
+    /** RF-042: token renovado y segundos que quedan de sesión con él. */
+    public record RenovacionRespuesta(String token, String tipo, long segundosRestantes) {}
 
     public record SesionRespuesta(
             String token,

@@ -10,7 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 /**
@@ -60,6 +63,33 @@ public class SesionService {
             s.setFechaExpiracion(nueva);
         }
         return Optional.of(s);
+    }
+
+    /**
+     * RF-042: amplía la sesión cuando la persona responde al aviso. Desliza la inactividad y emite
+     * un JWT nuevo para la misma sesión (el anterior deja de valer porque cambia el hash guardado).
+     */
+    @Transactional
+    public Optional<TokenEmitido> renovar(Long sesionId, Usuario usuario) {
+        Optional<Sesion> encontrada = repositorio.findById(sesionId)
+                .filter(s -> s.getUsuarioId().equals(usuario.getId()) && s.esValida());
+        if (encontrada.isEmpty()) return Optional.empty();
+        Sesion s = encontrada.get();
+        LocalDateTime expira = LocalDateTime.now().plusMinutes(props.sesion().inactividadMinutos());
+        s.setFechaExpiracion(expira);
+        String token = jwt.generar(usuario, s.getId());
+        s.setTokenHash(Hashes.sha256Hex(token));
+        return Optional.of(new TokenEmitido(token, expira));
+    }
+
+    /**
+     * RF-042: segundos que quedan de sesión: lo que llegue antes entre la inactividad y el tope
+     * absoluto del JWT. Nunca negativo.
+     */
+    public static long segundosRestantes(LocalDateTime expiraInactividad, Instant expiraToken, Instant ahora) {
+        Instant inactividad = expiraInactividad.atZone(ZoneId.systemDefault()).toInstant();
+        Instant fin = expiraToken == null || inactividad.isBefore(expiraToken) ? inactividad : expiraToken;
+        return Math.max(0, Duration.between(ahora, fin).getSeconds());
     }
 
     @Transactional

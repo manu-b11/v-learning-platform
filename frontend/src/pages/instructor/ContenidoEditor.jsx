@@ -5,10 +5,13 @@ import { useNotif } from "../../context/NotifContext.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { Banner, Button, Cargando, EstadoError, SelectField, TextField } from "../../components/ui/index.jsx";
 import RecursosEditor from "./RecursosEditor.jsx";
+import PanelAccesibilidad from "./PanelAccesibilidad.jsx";
+import ListaHallazgos from "../../components/ListaHallazgos.jsx";
+import { hallazgosDeError } from "../../utils/wcag.js";
 import { FORMATOS } from "./constantes.js";
 
 /** Datos del contenido: título, formato, enlace y cuerpo de texto estructurado. */
-function FormularioContenido({ moduloId, contenido, onGuardado, onCancelar }) {
+function FormularioContenido({ moduloId, contenido, onGuardado, onCancelar, version }) {
   const editando = Boolean(contenido?.id);
   const [titulo, setTitulo] = useState(contenido?.titulo ?? "");
   const [descripcion, setDescripcion] = useState(contenido?.descripcion ?? "");
@@ -70,10 +73,14 @@ function FormularioContenido({ moduloId, contenido, onGuardado, onCancelar }) {
             <li>Usa <code>## Título</code> para separar secciones; cada una será una unidad corta en el apoyo cognitivo.</li>
             <li>Escribe pasos como lista numerada: <code>1. Primer paso</code>.</li>
             <li>Para el glosario crea una sección <code>## Glosario</code> con líneas <code>Término: definición</code>.</li>
-            <li>Cada imagen necesita texto alternativo: <code>![Descripción de la imagen](ruta)</code>. Si falta, avisaremos al equipo y mostraremos una descripción genérica.</li>
+            <li>Cada imagen necesita texto alternativo: <code>![Descripción de la imagen](ruta)</code>. Sin él, el contenido no se puede publicar.</li>
+            <li>Escribe enlaces que digan a dónde llevan: <code>[Guía de normas APA](enlace)</code>, no «aquí».</li>
           </ul>
         </details>
       </div>
+      {editando && (
+        <PanelAccesibilidad contenidoId={contenido.id} formato={formato} urlRecurso={urlRecurso} cuerpo={cuerpo} version={version} />
+      )}
       <div className="flex flex-wrap gap-3">
         <Button type="submit" cargando={trabajando} disabled={!titulo.trim()} motivo={!titulo.trim() ? "Escribe el título del contenido." : undefined}>
           {editando ? "Guardar cambios" : "Crear contenido"}
@@ -90,10 +97,12 @@ function Publicacion({ contenidoId, publicado, onCambio, refresco }) {
   const { datos, cargando, error, recargar } = useAsync(() => api.instructor.conformidad(contenidoId), [contenidoId, refresco]);
   const [trabajando, setTrabajando] = useState(false);
   const [rechazo, setRechazo] = useState(null);
+  const [hallazgos, setHallazgos] = useState(null);
 
   const cambiar = async (publicar) => {
     setTrabajando(true);
     setRechazo(null);
+    setHallazgos(null);
     try {
       const r = publicar ? await api.instructor.publicarContenido(contenidoId) : await api.instructor.despublicarContenido(contenidoId);
       avisar(publicar ? "Contenido publicado." : "Contenido despublicado.", "ok");
@@ -102,6 +111,7 @@ function Publicacion({ contenidoId, publicado, onCambio, refresco }) {
       recargar();
     } catch (err) {
       setRechazo(mensajeError(err, "No pudimos cambiar la publicación. Intenta de nuevo."));
+      setHallazgos(hallazgosDeError(err)); // RF-049: problemas que bloquean la publicación
     } finally {
       setTrabajando(false);
     }
@@ -123,6 +133,7 @@ function Publicacion({ contenidoId, publicado, onCambio, refresco }) {
         <Banner tono="info"><ul className="list-disc pl-5 font-normal">{datos.advertencias.map((a) => <li key={a}>{a}</li>)}</ul></Banner>
       )}
       {rechazo && <Banner tono="err">{rechazo}</Banner>}
+      <ListaHallazgos hallazgos={hallazgos} />
       <div>
         {publicado ? (
           <Button variante="secondary" icono={EyeOff} cargando={trabajando} onClick={() => cambiar(false)}>Despublicar contenido</Button>
@@ -149,7 +160,7 @@ export default function ContenidoEditor({ moduloId, contenido, onGuardado, onCan
   const inicial = completo ? { ...contenido, descripcion: completo.descripcion, urlRecurso: completo.urlRecurso, cuerpo: completo.cuerpo, duracionMinutos: completo.duracionMinutos } : contenido;
   return (
     <div>
-      <FormularioContenido moduloId={moduloId} contenido={inicial} onGuardado={onGuardado} onCancelar={onCancelar} />
+      <FormularioContenido moduloId={moduloId} contenido={inicial} onGuardado={onGuardado} onCancelar={onCancelar} version={version} />
       {editando && (
         <>
           <RecursosEditor contenidoId={contenido.id} onCambio={() => { setVersion((v) => v + 1); onCambio?.(); }} />

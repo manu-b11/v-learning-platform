@@ -26,6 +26,14 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /** RF-049: publicación bloqueada por la verificación de accesibilidad; incluye los hallazgos. */
+    @ExceptionHandler(PublicacionBloqueadaException.class)
+    public ResponseEntity<com.elearning.platform.dto.VerificacionDtos.PublicacionBloqueada> publicacionBloqueada(
+            PublicacionBloqueadaException e, HttpServletRequest req) {
+        return ResponseEntity.status(e.getEstado()).body(new com.elearning.platform.dto.VerificacionDtos.PublicacionBloqueada(
+                e.getCodigo(), e.getMessage(), e.getHallazgos(), java.time.LocalDateTime.now(), req.getRequestURI()));
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorRespuesta> api(ApiException e, HttpServletRequest req) {
         return ResponseEntity.status(e.getEstado())

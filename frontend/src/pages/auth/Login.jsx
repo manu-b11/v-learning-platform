@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { api, mensajeError } from "../../api/client.js";
+import { api, codigoError, mensajeError } from "../../api/client.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { destinoInicial } from "../../utils/destino.js";
 import { AuthShell } from "../../components/layout/Shells.jsx";
@@ -22,13 +22,26 @@ export default function Login() {
   const [otpDev, setOtpDev] = useState(null);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
+  const [bloqueada, setBloqueada] = useState(false);
   const [cargando, setCargando] = useState(false);
+  // RF-044: error asociado al campo del código, reenvío con espera de 60 s y foco en el campo.
+  const [errorCodigo, setErrorCodigo] = useState(null);
+  const [espera, setEspera] = useState(0);
+  const [reenviando, setReenviando] = useState(false);
+  const campoCodigo = useRef(null);
+
+  useEffect(() => {
+    if (espera <= 0) return undefined;
+    const t = setTimeout(() => setEspera((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [espera]);
 
   if (usuario) return <Navigate to={destinoInicial(usuario)} replace />;
 
   const enviarCredenciales = async (e) => {
     e.preventDefault();
     setError(null);
+    setBloqueada(false);
     setCargando(true);
     try {
       const r = await api.auth.login(correo.trim(), password);
@@ -40,6 +53,8 @@ export default function Login() {
       }
       setOtpDev(r.codigoOtp ?? null);
       setInfo(r.mensaje);
+      setErrorCodigo(null);
+      setEspera(60);
       setPaso(2);
     } catch (err) {
       setError(
@@ -48,6 +63,8 @@ export default function Login() {
           "No pudimos iniciar sesión. Revisa tu correo y contraseña.",
         ),
       );
+      // RF-043: con bloqueo temporal se ofrece el enlace de desbloqueo.
+      setBloqueada(codigoError(err) === "CUENTA_BLOQUEADA");
     } finally {
       setCargando(false);
     }
@@ -56,19 +73,43 @@ export default function Login() {
   const enviarCodigo = async (e) => {
     e.preventDefault();
     setError(null);
+    if (codigo.length !== 6) {
+      setErrorCodigo("Escribe los 6 dígitos del código.");
+      campoCodigo.current?.focus();
+      return;
+    }
+    setErrorCodigo(null);
     setCargando(true);
     try {
       const u = await verificarOtp(correo.trim(), codigo.trim());
       navigate(destinoInicial(u), { replace: true });
     } catch (err) {
-      setError(
+      setErrorCodigo(
         mensajeError(
           err,
-          "El código no es válido o venció. Pide uno nuevo volviendo atrás.",
+          "El código no es válido o venció. Revísalo o pide uno nuevo con «Reenviar código».",
         ),
       );
+      campoCodigo.current?.focus();
     } finally {
       setCargando(false);
+    }
+  };
+
+  const reenviar = async () => {
+    setReenviando(true);
+    setErrorCodigo(null);
+    try {
+      const r = await api.auth.reenviarOtp(correo.trim());
+      setOtpDev(r.codigoOtp ?? null);
+      setInfo(r.mensaje);
+      setCodigo("");
+      setEspera(60);
+    } catch (err) {
+      setErrorCodigo(mensajeError(err, "No pudimos enviar otro código. Inténtalo de nuevo en un momento."));
+    } finally {
+      setReenviando(false);
+      campoCodigo.current?.focus();
     }
   };
 
@@ -92,6 +133,13 @@ export default function Login() {
         <Banner tono="err" className="mt-5">
           {error}
         </Banner>
+      )}
+      {bloqueada && paso === 1 && (
+        <p className="mt-3">
+          <Link to="/desbloquear" className="font-bold text-primary-600 underline">
+            ¿No te llegó el enlace de desbloqueo? Pide otro
+          </Link>
+        </p>
       )}
 
       {paso === 1 ? (
@@ -140,7 +188,7 @@ export default function Login() {
         </form>
       ) : (
         <form onSubmit={enviarCodigo} className="mt-6 grid gap-5" noValidate>
-          {info && <Banner tono="info">{info}</Banner>}
+          {info && <Banner tono="info" rol="status">{info}</Banner>}
           {otpDev && (
             <Banner tono="warn">
               Tu código es{" "}
@@ -148,33 +196,41 @@ export default function Login() {
             </Banner>
           )}
           <TextField
+            ref={campoCodigo}
             label="Código de 6 dígitos"
+            ayuda="Puedes pegarlo desde tu correo. Si tiene espacios o guiones, los quitamos."
             inputMode="numeric"
             autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            maxLength={6}
+            maxLength={12}
             required
             value={codigo}
-            onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
+            error={errorCodigo}
+            onChange={(e) => {
+              setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6));
+              if (errorCodigo) setErrorCodigo(null);
+            }}
             className="max-w-xs"
           />
           <div className="flex flex-wrap gap-3">
-            <Button
-              type="submit"
-              cargando={cargando}
-              disabled={codigo.length !== 6}
-              motivo={
-                codigo.length !== 6 ? "Escribe los 6 dígitos." : undefined
-              }
-            >
+            <Button type="submit" cargando={cargando}>
               Entrar
             </Button>
             <Button
               variante="secondary"
+              onClick={reenviar}
+              cargando={reenviando}
+              disabled={espera > 0}
+              motivo={espera > 0 ? `Podrás pedir otro código en ${espera} segundos.` : undefined}
+            >
+              Reenviar código
+            </Button>
+            <Button
+              variante="link"
               onClick={() => {
                 setPaso(1);
                 setCodigo("");
                 setError(null);
+                setErrorCodigo(null);
               }}
             >
               Volver

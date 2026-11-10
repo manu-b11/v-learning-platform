@@ -3,7 +3,9 @@ package com.elearning.platform.services;
 import com.elearning.platform.dto.CursoDtos.*;
 import com.elearning.platform.entity.*;
 import com.elearning.platform.enums.*;
+import com.elearning.platform.dto.VerificacionDtos.HallazgoVista;
 import com.elearning.platform.exception.ApiException;
+import com.elearning.platform.exception.PublicacionBloqueadaException;
 import com.elearning.platform.repository.*;
 import com.elearning.platform.util.TextoApoyo;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class InstructorCursoService {
     private final InstructorRepository instructores;
     private final AuditoriaService auditoria;
     private final NotificacionService notificaciones;
+    private final AccesibilidadContenidoService verificador;
 
     @Transactional(readOnly = true)
     public List<CursoResumen> listar(Long instructorId) {
@@ -204,12 +207,18 @@ public class InstructorCursoService {
     @Transactional(noRollbackFor = ApiException.class)
     public PublicacionRespuesta publicarContenido(Long contenidoId, Long instructorId, String ip) {
         Contenido c = acceso.contenidoPropio(contenidoId, instructorId);
-        List<String> faltan = ConformidadAccesibilidad.faltantes(c, recursos.findByContenidoIdOrderByIdAsc(contenidoId));
-        if (!faltan.isEmpty()) {
+        List<RecursoAccesible> recs = recursos.findByContenidoIdOrderByIdAsc(contenidoId);
+        List<String> faltan = ConformidadAccesibilidad.faltantes(c, recs);
+        // RF-049: verificación completa; los hallazgos bloqueantes impiden publicar y el informe se conserva.
+        List<HallazgoVista> bloqueantes = AccesibilidadContenidoService.bloqueantes(
+                List.of(verificador.verificarYGuardar(c, recs)));
+        if (!faltan.isEmpty() || !bloqueantes.isEmpty()) {
             auditoria.registrar(instructorId, "PUBLICACION_RECHAZADA_NO_CONFORME", "contenidos/" + contenidoId,
                     ResultadoAuditoria.DENEGADO, ip);
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "CONTENIDO_NO_CONFORME",
-                    "No se puede publicar: " + String.join(" ", faltan));
+            List<String> motivos = new ArrayList<>(faltan);
+            bloqueantes.stream().map(HallazgoVista::mensaje).filter(m -> !motivos.contains(m)).forEach(motivos::add);
+            throw new PublicacionBloqueadaException("CONTENIDO_NO_CONFORME",
+                    "No se puede publicar: " + String.join(" ", motivos), bloqueantes);
         }
         boolean eraVisible = c.isPublicado();
         c.publicar();
@@ -239,6 +248,16 @@ public class InstructorCursoService {
         if (contenidos.contarPublicadosDelCurso(cursoId) == 0) {
             throw ApiException.conflicto("CURSO_SIN_CONTENIDO",
                     "Para publicar el curso publica al menos un contenido conforme.");
+        }
+        // RF-049: verificación completa de los contenidos publicados del curso (con informe por contenido).
+        List<HallazgoVista> bloqueantes = AccesibilidadContenidoService.bloqueantes(verificador.verificarCurso(cursoId));
+        if (!bloqueantes.isEmpty()) {
+            auditoria.registrar(instructorId, "PUBLICACION_CURSO_RECHAZADA", "cursos/" + cursoId,
+                    ResultadoAuditoria.DENEGADO, ip);
+            long afectados = bloqueantes.stream().map(HallazgoVista::contenidoId).distinct().count();
+            throw new PublicacionBloqueadaException("CURSO_NO_CONFORME",
+                    "No se puede publicar el curso: " + afectados + " contenido(s) tienen problemas de accesibilidad "
+                            + "que hay que corregir.", bloqueantes);
         }
         c.publicar();
         cursos.save(c);

@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -47,6 +48,17 @@ public class EvaluacionController {
     public GuardadoRespuesta guardar(@AuthenticationPrincipal UsuarioPrincipal u, @PathVariable Long id,
                                      @PathVariable Long preguntaId, @Valid @RequestBody RespuestaRequest req) {
         return estudiante.guardarRespuesta(u.id(), id, preguntaId, req.valor());
+    }
+
+    /** RF-042: ampliar el intento con los minutos que permite la acomodación del estudiante (RF-041). */
+    @Operation(summary = "Ampliar el tiempo del intento (RF-042)",
+            description = "Solo una vez por intento, cuando faltan pocos minutos y si la acomodación del estudiante "
+                    + "lo permite (minutosAmpliacion > 0). Responde 409 AMPLIACION_NO_PERMITIDA en otro caso.")
+    @PostMapping("/intentos/{id}/ampliar")
+    @PreAuthorize("hasRole('ESTUDIANTE')")
+    public AmpliacionRespuesta ampliar(@AuthenticationPrincipal UsuarioPrincipal u, @PathVariable Long id,
+                                       HttpServletRequest http) {
+        return estudiante.ampliar(u.id(), id, IpUtil.de(http));
     }
 
     @PostMapping("/intentos/{id}/finalizar")
