@@ -3,6 +3,7 @@ import { CheckCircle2, CircleAlert, Info, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "./AuthContext.jsx";
 import { useModoLectura } from "./ModoLecturaContext.jsx";
+import { usePrefs } from "./PrefsContext.jsx";
 import { reproducirAviso, sonidoActivado } from "../utils/sonido.js";
 
 const NotifContext = createContext(null);
@@ -30,6 +31,10 @@ export function NotifProvider({ children }) {
   const { activo: enLectura } = useModoLectura();
   const enLecturaRef = useRef(enLectura);
   const enEspera = useRef([]);
+  // RF-034: con los anuncios desactivados solo se actualiza el contador de la campana.
+  const { config: prefs } = usePrefs();
+  const anunciarRef = useRef(true);
+  useEffect(() => { anunciarRef.current = prefs?.anunciarMensajes !== false; }, [prefs?.anunciarMensajes]);
 
   const avisar = useCallback((mensaje, tipo = "info") => {
     if (enLecturaRef.current && tipo !== "error") {
@@ -68,7 +73,7 @@ export function NotifProvider({ children }) {
         const nuevas = r.notificaciones.filter((n) => !n.leida && !vistas.current.has(n.id));
         nuevas.forEach((n) => {
           vistas.current.add(n.id);
-          avisar(`${n.titulo}: ${n.mensaje}`, "info");
+          if (anunciarRef.current) avisar(`${n.titulo}: ${n.mensaje}`, "info");
         });
         if (nuevas.length > 0 && sonidoActivado()) reproducirAviso();
       }

@@ -61,7 +61,7 @@ public final class ReglasAccesibilidad {
         // RF-046: el modo lectura sin distracciones se recomienda por defecto para el perfil cognitivo.
         boolean modoLectura = categorias.contains(CategoriaAccesibilidad.COGNITIVA);
         return new ConfiguracionDto(contraste, fuente, FUENTE_BASE, espaciado, teclado, lector,
-                subtitulos, transcripcion, voz, extra, false, modoLectura);
+                subtitulos, transcripcion, voz, extra, false, modoLectura, true);
     }
 
     /** Avisos de legibilidad (no bloquean el guardado). */
@@ -115,6 +115,7 @@ public final class ReglasAccesibilidad {
                 c.textoAVoz() || auto.textoAVoz(),
                 Math.max(c.tiempoAdicional(), auto.tiempoAdicional()),
                 Boolean.TRUE.equals(c.subrayarEnlaces()),
-                Boolean.TRUE.equals(c.modoLectura()) || Boolean.TRUE.equals(auto.modoLectura()));
+                Boolean.TRUE.equals(c.modoLectura()) || Boolean.TRUE.equals(auto.modoLectura()),
+                !Boolean.FALSE.equals(c.anunciarMensajes()));
     }
 }

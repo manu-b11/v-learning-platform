@@ -14,6 +14,7 @@ export const PREFS_BASE = {
   tiempoAdicional: 0,
   subrayarEnlaces: false, // RF-035
   modoLectura: false, // RF-046
+  anunciarMensajes: true, // RF-034
 };
 
 const FUENTES = {

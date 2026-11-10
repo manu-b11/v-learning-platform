@@ -26,7 +26,7 @@ class ModoLecturaTest {
     @Test
     void laSugerenciaRespetaElModoLecturaElegido() {
         ConfiguracionDto elegido = new ConfiguracionDto(false, 16, null, new java.math.BigDecimal("1.50"),
-                false, false, false, false, false, 0, false, true);
+                false, false, false, false, false, 0, false, true, true);
         assertTrue(ReglasAccesibilidad.sugerir(elegido, EnumSet.noneOf(CategoriaAccesibilidad.class)).modoLectura());
     }
 }

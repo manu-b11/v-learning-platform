@@ -29,6 +29,19 @@ public final class ChatDtos {
                                    String contenido, LocalDateTime fechaEnvio, LocalDateTime fechaReporte,
                                    java.util.List<String> reportadoPor) {}
 
+    /** textoPlano (RF-034): «autor: texto» listo para anunciar al lector de pantalla. */
     public record MensajeDto(Long id, Long cursoId, Long usuarioId, String autor, RolUsuario rol, String contenido,
-                             LocalDateTime fechaEnvio, EstadoMensaje estado) {}
+                             LocalDateTime fechaEnvio, EstadoMensaje estado, String textoPlano) {
+
+        public MensajeDto(Long id, Long cursoId, Long usuarioId, String autor, RolUsuario rol, String contenido,
+                          LocalDateTime fechaEnvio, EstadoMensaje estado) {
+            this(id, cursoId, usuarioId, autor, rol, contenido, fechaEnvio, estado, textoPlano(autor, contenido));
+        }
+
+        /** RF-034: texto del anuncio, sin marcas ni saltos de línea. */
+        public static String textoPlano(String autor, String contenido) {
+            String limpio = contenido == null ? "" : contenido.replaceAll("\\s+", " ").trim();
+            return (autor == null ? "Alguien" : autor) + ": " + limpio;
+        }
+    }
 }

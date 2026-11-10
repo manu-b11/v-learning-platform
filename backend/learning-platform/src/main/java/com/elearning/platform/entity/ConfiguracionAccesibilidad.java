@@ -61,6 +61,10 @@ public class ConfiguracionAccesibilidad {
     @Column(name = "modo_lectura_predeterminado", nullable = false)
     private boolean modoLectura = false;
 
+    /** RF-034: anunciar mensajes y notificaciones nuevas al lector de pantalla. */
+    @Column(name = "anunciar_mensajes", nullable = false)
+    private boolean anunciarMensajes = true;
+
     @Column(name = "fecha_configuracion", nullable = false)
     private LocalDateTime fechaConfiguracion;
 

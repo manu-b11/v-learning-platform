@@ -35,14 +35,16 @@ public final class AccesibilidadDtos {
             /** RF-035: subrayar todos los enlaces (null = no). */
             Boolean subrayarEnlaces,
             /** RF-046: abrir las lecturas en modo lectura sin distracciones (null = no). */
-            Boolean modoLectura) {
+            Boolean modoLectura,
+            /** RF-034: anunciar mensajes y notificaciones nuevas al lector de pantalla (null = sí). */
+            Boolean anunciarMensajes) {
 
         /** Constructor con los ajustes anteriores a RF-035 (sin subrayado de enlaces). */
         public ConfiguracionDto(boolean altoContraste, Integer tamanoFuente, String tipografia, BigDecimal espaciadoLinea,
                                 boolean navegacionTeclado, boolean lectorPantalla, boolean subtitulos,
                                 boolean transcripcion, boolean textoAVoz, Integer tiempoAdicional) {
             this(altoContraste, tamanoFuente, tipografia, espaciadoLinea, navegacionTeclado, lectorPantalla,
-                    subtitulos, transcripcion, textoAVoz, tiempoAdicional, false, false);
+                    subtitulos, transcripcion, textoAVoz, tiempoAdicional, false, false, true);
         }
     }
 

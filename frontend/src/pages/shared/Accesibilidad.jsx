@@ -226,6 +226,12 @@ export default function Accesibilidad({ embebido = false }) {
             )}
             <div className="divide-y divide-line">
               <Toggle
+                label={t("Anunciar mensajes y notificaciones")}
+                descripcion={t("El lector de pantalla lee los mensajes nuevos del chat y las notificaciones sin mover el foco.")}
+                checked={config.anunciarMensajes !== false}
+                onChange={(v) => actualizar({ anunciarMensajes: v })}
+              />
+              <Toggle
                 label={t("Subrayar enlaces")}
                 descripcion={t("Todos los enlaces se ven subrayados, sin depender del color.")}
                 checked={Boolean(config.subrayarEnlaces)}

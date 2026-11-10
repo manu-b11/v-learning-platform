@@ -119,7 +119,7 @@ function rutas(usuario) {
 }
 
 /** Simula toda la API bajo /api; lo que no está previsto responde 200 vacío para no romper la vista. */
-export async function simularApi(page, usuario) {
+export async function simularApi(page, usuario, { websocket } = {}) {
   const tabla = rutas(usuario);
   // Solo las peticiones a /api/…: un patrón «**/api/**» también atraparía el módulo /src/api/client.js.
   await page.route((url) => url.pathname.startsWith("/api/"), async (route) => {
@@ -135,12 +135,13 @@ export async function simularApi(page, usuario) {
     });
   });
   // El chat en vivo no tiene servidor en las pruebas: la vista muestra «Sin conexión en vivo».
-  await page.routeWebSocket?.(/\/ws\//, (ws) => ws.close());
+  // Por defecto el chat en vivo no tiene servidor; una prueba puede pasar su propio servidor simulado.
+  await page.routeWebSocket?.(/\/ws\//, websocket ?? ((ws) => ws.close()));
 }
 
 /** Inicia la sesión simulada guardando un token antes de cargar la app. */
-export async function conSesion(page, usuario, extra = {}) {
-  await simularApi(page, usuario);
+export async function conSesion(page, usuario, extra = {}, opciones = {}) {
+  await simularApi(page, usuario, opciones);
   await page.addInitScript(({ datos }) => {
     sessionStorage.setItem("vl.token", "token-de-prueba");
     for (const [k, v] of Object.entries(datos)) sessionStorage.setItem(k, v);
