@@ -355,7 +355,7 @@ flowchart TD
 1. El administrador lo registra (RF-001) → entra con la contraseña temporal (RF-002) → **cambia la contraseña**.
 2. **Onboarding:** test VARK con ayuda por pregunta y guardado parcial (RF-004) → método recomendado y segundo opcional → perfil de accesibilidad con vista previa (RF-014).
 3. **Inicio:** hero "Qué bueno verte, {nombre}", "Continuar aprendiendo", pendientes y puntos.
-4. **RF-005 · Cursos:** detalle con módulos ordenados → lección con video, subtítulos, transcripción sincronizada, leer en voz alta (RF-018, 019), otros formatos y apoyo cognitivo (RF-022).
+4. **RF-005 · Cursos:** detalle con módulos ordenados → lección con video, subtítulos, transcripción sincronizada (RF-038), leer en voz alta (RF-018, 019), otros formatos y apoyo cognitivo (RF-022).
 5. **RF-007 y RF-008 · Evaluaciones:** habilitadas al completar el módulo → intento con guardado automático y cronómetro → resultado con retroalimentación → repetir si quiere.
 6. **RF-006 y RF-009:** *Mi progreso* (con exportación) y *Logros* (con modo privado).
 7. **RF-010 · Comunidad**, **RF-011 · notificaciones**, **RF-024 · Tutor IA**, **Accesibilidad** (RF-014 a RF-022) y **Configuración** (método VARK, notificaciones).
@@ -605,7 +605,7 @@ Guarda cada imagen en `docs/img/` con el nombre indicado. Todos los prompts sigu
 - **Prompt:** *"UI mockup of a learning dashboard, 16:9. Fixed left sidebar 246px wide, very dark navy (#0B1022), logo 'V-Learning' with tagline 'Aprender a tu manera', ten white line-icon items with labels (Inicio, Mis cursos, Evaluaciones, Mi progreso, Logros, Comunidad, Tutor IA, Accesibilidad, Configuración, Cerrar sesión), the active item filled solid purple (#5B21B6) with a small 'ACTUAL' label. Top bar with breadcrumb, centered search box, bell icon with a red dot and a pill showing '1.240 pts'. Main area: a purple hero banner with decorative circles and the greeting 'Qué bueno verte, Camila', then a 3-column grid of course cards with 16:9 thumbnails, progress bars and percentages. Background #F8F9FC, flat clean UI, Spanish text, no real people."*
 
 **`docs/img/07-leccion.png`** · 16:9 · RF-005, RF-018, RF-019.
-- **Texto alternativo:** Lección con video, subtítulos y transcripción sincronizada.
+- **Texto alternativo:** Lección con video, subtítulos y transcripción sincronizada (RF-038: resalta la línea en curso, salta al momento de cada línea y se descarga en .txt o .srt).
 - **Descripción:** Reproductor con insignia "SUBTÍTULOS ACTIVADOS", controles completos; a la derecha la transcripción con un fragmento resaltado y "REPRODUCIENDO AHORA"; botón "Leer en voz alta", sección colapsable "Otros formatos de esta lección" y cuadro menta de atajos de teclado.
 - **Prompt:** *"UI mockup of an accessible lesson page, 16:9, inside an app shell with a dark navy left sidebar. Left: a video player with a lavender badge 'SUBTÍTULOS ACTIVADOS', burned-in subtitle text on the video, and a control bar (pause, volume, time, speed, captions, fullscreen). Right: a synchronized transcript list where the current fragment is highlighted lavender with a small label 'REPRODUCIENDO AHORA'. Below the video: a button 'Leer en voz alta', a collapsible 'Otros formatos de esta lección' with Lectura and Podcast, and a mint panel (#E8F5F0) listing keyboard shortcuts. Palette #5B21B6, #0B1022, #F8F9FC, flat clean UI, Spanish text, abstract video frame without real people."*
 
@@ -666,7 +666,7 @@ Guarda cada imagen en `docs/img/` con el nombre indicado. Todos los prompts sigu
 | Objetivos táctiles | Mínimo 44 × 44 px; ítems de menú de al menos 44 px. |
 | Lectores de pantalla | Regiones `nav`, `main`, `aside`; etiquetas accesibles en íconos; `aria-live` en chat y guardados. |
 | Texto y tipografía | Unidades `rem`; tamaños 100 / 125 / 150 %; interlineado 1.35 / 1.5 / 1.75; fuentes Atkinson, sistema o Dislexia (Lexend); líneas ≤ ~70 caracteres. |
-| Multimodal | Subtítulos, transcripción sincronizada, lectura en voz alta (Web Speech API), formatos alternativos y versión simplificada. |
+| Multimodal | Subtítulos, transcripción sincronizada junto al video (RF-038, desde el VTT de los subtítulos aprobados), lectura en voz alta (Web Speech API), formatos alternativos y versión simplificada. |
 | Movimiento | Respeta `prefers-reduced-motion`. |
 | Tiempo | Tiempo adicional configurable en actividades cronometradas. Acomodaciones por estudiante (1,5x, 2x, ilimitado, fecha especial) calculadas en el servidor: se aplica el mayor entre perfil y acomodación (RF-041). Aviso a 2 minutos del fin de la sesión y de la evaluación, con ampliación (RF-042, 2.2.1). |
 | Autenticación accesible | Código OTP en un solo campo con `autocomplete="one-time-code"`, que admite pegar, error asociado al campo y «Reenviar código» (RF-044, 3.3.8). Desbloqueo por enlace al correo, sin depender del administrador (RF-043). |

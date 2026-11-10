@@ -20,6 +20,7 @@ import { useNotif } from "../../context/NotifContext.jsx";
 import { usePrefs } from "../../context/PrefsContext.jsx";
 import { useTutor } from "../../context/TutorContext.jsx";
 import { useModoLectura } from "../../context/ModoLecturaContext.jsx";
+import TranscripcionSincronizada from "../../components/TranscripcionSincronizada.jsx";
 import { useAsync } from "../../utils/useAsync.js";
 import { useTexto } from "../../utils/useTexto.js";
 import { FORMATO_TEXTO } from "../../utils/format.js";
@@ -342,6 +343,7 @@ function LeccionContenido() {
         {pestana === "contenido" && (
           <div className="grid gap-5">
             {c.formato === "VIDEO" && c.urlRecurso && (
+              <div className={subt ? "grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" : undefined}>
               <video
                 ref={medio}
                 controls
@@ -361,6 +363,13 @@ function LeccionContenido() {
                 )}
                 {t("Tu navegador no puede reproducir este video.")}
               </video>
+              {/* RF-038: transcripción sincronizada (solo con subtítulos aprobados). */}
+              {subt?.url && (
+                <TranscripcionSincronizada medio={medio} urlVtt={subt.url} titulo={c.titulo}
+                  onSaltar={(s) => { if (medio.current) medio.current.currentTime = s; }}
+                  abiertaAlInicio={Boolean(config.transcripcion)} />
+              )}
+              </div>
             )}
             {c.formato === "PODCAST" && (c.urlRecurso || audio) && (
               <audio
