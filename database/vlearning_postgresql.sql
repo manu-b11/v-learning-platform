@@ -4,8 +4,14 @@
 -- incluidas las tareas calificables, la moderación de mensajes, la fecha límite
 -- de evaluaciones y el destino (enlace) de las notificaciones.
 --
--- Ejecutar conectado a la base vlearning (ver 00_crear_bd.sql):
---   psql -U vlearning_admin -d vlearning -f database/postgresql/01_schema.sql
+-- Script ÚNICO de base de datos: incluye el esquema completo y todo lo que antes
+-- estaba en los scripts database/migracion_*.sql (doble factor, auditoría inmutable,
+-- cola del chat, desbloqueo de cuenta, acomodaciones, verificador de accesibilidad,
+-- preferencias de accesibilidad, resumen de notificaciones, lengua de señas,
+-- subtítulos automáticos y formatos alternativos).
+--
+-- Ejecutar conectado a la base vlearning:
+--   psql -U vlearning_admin -d vlearning -f database/vlearning_postgresql.sql
 --
 -- ADVERTENCIA: el script BORRA y vuelve a crear todas las tablas de V-Learning.
 --
@@ -34,6 +40,7 @@ DROP TABLE IF EXISTS
     administradores, instructores, estudiantes, usuarios
 CASCADE;
 DROP FUNCTION IF EXISTS fn_actualizar_fecha_actualizacion() CASCADE;
+DROP FUNCTION IF EXISTS fn_auditoria_inmutable() CASCADE;
 
 -- ================================================================
 CREATE TABLE usuarios (
@@ -829,6 +836,7 @@ CREATE INDEX idx_reportes_mensaje ON reportes_mensaje (mensaje_id);
 CREATE INDEX idx_notificaciones_usuario ON notificaciones (usuario_id);
 CREATE INDEX idx_notificaciones_leida ON notificaciones (usuario_id, leida);
 CREATE INDEX idx_notificaciones_fecha ON notificaciones (fecha_creacion);
+CREATE INDEX idx_notificaciones_resumen ON notificaciones (en_resumen, pospuesta_hasta);
 CREATE INDEX idx_informes_usuario ON informes (usuario_id);
 CREATE INDEX idx_informes_fecha ON informes (fecha_generacion);
 CREATE INDEX idx_sesiones_usuario ON sesiones (usuario_id);

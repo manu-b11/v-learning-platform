@@ -102,18 +102,7 @@ v-learning-platform/
 ├─ README.md
 ├─ package.json
 ├─ database/
-│  ├─ vlearning_postgresql.sql      Esquema PostgreSQL completo (ampliaciones marcadas [EXT])
-│  ├─ migracion_doble_factor.sql    Migración: segundo factor opcional para estudiantes
-│  ├─ migracion_auditoria_inmutable_y_cola_chat.sql
-│  ├─ migracion_desbloqueo_cuenta.sql          RF-043
-│  ├─ migracion_acomodaciones.sql              RF-041, RF-042
-│  ├─ migracion_verificador_accesibilidad.sql  RF-049, RF-039
-│  ├─ migracion_preferencias_accesibilidad.sql RF-034, RF-035, RF-046
-│  ├─ migracion_resumen_notificaciones.sql     RF-047
-│  ├─ migracion_lengua_senas.sql               RF-040
-│  ├─ migracion_subtitulos_automaticos.sql     RF-037
-│  └─ migracion_formatos_alternativos.sql      RF-032
-│                                   Migración: auditoría de solo inserción y cola de reenvío del chat
+│  └─ vlearning_postgresql.sql      Script único: esquema PostgreSQL completo (ampliaciones marcadas [EXT])
 ├─ docs/
 │  └─ img/                           Imágenes del README (sección 12)
 ├─ backend/learning-platform/        Monolito Spring Boot
@@ -165,19 +154,7 @@ v-learning-platform/
    ```bash
    psql -U vlearning_admin -d vlearning -f database/vlearning_postgresql.sql
    ```
-3. **Base ya creada con una versión anterior:** aplica las migraciones (son idempotentes):
-   ```bash
-   psql -U vlearning_admin -d vlearning -f database/migracion_doble_factor.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_auditoria_inmutable_y_cola_chat.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_desbloqueo_cuenta.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_acomodaciones.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_verificador_accesibilidad.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_preferencias_accesibilidad.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_resumen_notificaciones.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_lengua_senas.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_subtitulos_automaticos.sql
-   psql -U vlearning_admin -d vlearning -f database/migracion_formatos_alternativos.sql
-   ```
+3. **Base ya creada con una versión anterior:** vuelve a ejecutar el mismo script. Ya incluye todos los cambios que antes estaban en los `migracion_*.sql`, pero **borra y vuelve a crear las tablas**, así que respalda los datos antes (`pg_dump`) si los necesitas.
 4. La tabla `registros_auditoria` es de **solo inserción**: los triggers `trg_registros_auditoria_inmutable` y `trg_registros_auditoria_sin_truncate` rechazan `UPDATE`, `DELETE` y `TRUNCATE` para cualquier rol, incluido el dueño. Opcional: un rol de aplicación sin privilegios de dueño (bloque comentado al final del script).
 
 ### 6.2 Backend
