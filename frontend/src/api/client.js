@@ -14,7 +14,10 @@ export const token = {
   },
 };
 
-export const client = axios.create({ baseURL: "/api", timeout: 130000 });
+export const client = axios.create({
+  baseURL: `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}/api`,
+  timeout: 130000
+});
 
 client.interceptors.request.use((config) => {
   const t = token.get();
