@@ -69,17 +69,17 @@ public class SecurityConfig {
 
                 // Autenticación pública
                 .requestMatchers(
-                    "/auth/login",
-                    "/auth/otp/verificar",
-                    "/auth/otp/reenviar",
-                    "/auth/recuperar",
-                    "/auth/restablecer",
-                    "/auth/desbloquear",
-                    "/auth/desbloqueo/solicitar"
+                    "/api/auth/login",
+                    "/api/auth/otp/verificar",
+                    "/api/auth/otp/reenviar",
+                    "/api/auth/recuperar",
+                    "/api/auth/restablecer",
+                    "/api/auth/desbloquear",
+                    "/api/auth/desbloqueo/solicitar"
                 ).permitAll()
 
                 // Archivos públicos
-                .requestMatchers(HttpMethod.GET, "/archivos/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/archivos/**").permitAll()
 
                 // WebSocket
                 .requestMatchers("/ws/**").permitAll()
